@@ -1,4 +1,10 @@
 {
-    "title": "Solutronic Integration",
-    "description": "Integration til at hente data fra Solutronic-enheder."
-}
+    "title": "Solutronic",
+    "data": {
+      "host": "Indtast IP-adresse"
+    },
+    "errors": {
+      "no_devices_found": "Ingen enheder fundet på netværket."
+    }
+  }
+  
