@@ -1,68 +1,130 @@
-import socket
-import requests
+import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import FlowResult
+import socket
+import ipaddress
+import requests
 from .const import DOMAIN
+
+CONF_HOST = "host"
+CONF_SCAN_INTERVAL = "scan_interval"
+
+DEFAULT_SCAN_INTERVAL = 5
+DEFAULT_TIMEOUT = 2
+
+
+def get_local_subnet():
+    """Find the local subnet based on the host's IP address."""
+    try:
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        # Assume a subnet mask of 255.255.255.0 (CIDR /24)
+        ip_network = ipaddress.IPv4Network(f"{local_ip}/24", strict=False)
+        return ip_network
+    except Exception as e:
+        return None
+
+
+def find_solutronic_devices(timeout=DEFAULT_TIMEOUT):
+    """Scan the local subnet for Solutronic devices."""
+    devices = []
+    subnet = get_local_subnet()
+    if not subnet:
+        return devices
+
+    for ip in subnet.hosts():
+        try:
+            response = requests.get(f"http://{ip}", timeout=timeout)
+            if "solutronic" in response.text.lower():
+                devices.append(str(ip))
+        except (requests.ConnectionError, requests.Timeout):
+            continue
+
+    return devices
+
 
 class SolutronicConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Solutronic."""
 
+    VERSION = 1
+
     def __init__(self):
-        """Initialize."""
-        self._host = None
+        self.discovered_devices = []
 
-    async def async_step_user(self, user_input=None):
-        """Handle the initial user input."""
-        if user_input is None:
-            # Scan network for devices
-            devices = await self.async_find_solutronic_devices()
-            if devices:
-                return self.async_show_form(
-                    step_id="user",
-                    data_schema=self._build_data_schema(devices),
-                    description_placeholders={"devices": ", ".join(devices)},
-                )
-            else:
-                # No devices found, ask user for IP
-                return self.async_show_form(
-                    step_id="user", 
-                    data_schema=self._build_data_schema([]),
-                    errors={"base": "no_devices_found"}
-                )
-        
-        # If the user provided an IP address
-        self._host = user_input.get("host")
-        return self.async_create_entry(title="Solutronic", data={"host": self._host})
+    async def async_step_user(self, user_input=None) -> FlowResult:
+        """Handle the initial step."""
+        errors = {}
 
-    def _build_data_schema(self, devices):
-        """Build the data schema for the form."""
-        from homeassistant.helpers import config_validation as cv
-        from homeassistant.components import InputText
+        if user_input is not None:
+            return self.async_create_entry(title="Solutronic", data=user_input)
 
-        schema = {}
-        if devices:
-            schema["host"] = cv.string
-        else:
-            schema["host"] = cv.string
-        return schema
+        # Scan the network for devices
+        self.discovered_devices = await self.hass.async_add_executor_job(find_solutronic_devices)
 
-    async def async_find_solutronic_devices(self, timeout=2):
-        """Scan the local subnet for Solutronic devices."""
-        devices = []
+        if self.discovered_devices:
+            # If devices are found, allow user to select one
+            return self.async_step_select_device()
 
-        # Get the local subnet
-        subnet = get_local_subnet()
-        if not subnet:
-            print("Could not determine local subnet.")
-            return devices
+        # If no devices found, prompt manual input
+        return self.async_step_manual_input()
 
-        # Scan each IP in the subnet
-        for ip in subnet.hosts():
+    async def async_step_select_device(self, user_input=None) -> FlowResult:
+        """Handle device selection from discovered devices."""
+        if user_input is not None:
+            return self.async_create_entry(title="Solutronic", data=user_input)
+
+        return self.async_show_form(
+            step_id="select_device",
+            data_schema=vol.Schema({vol.Required(CONF_HOST): vol.In(self.discovered_devices)}),
+        )
+
+    async def async_step_manual_input(self, user_input=None) -> FlowResult:
+        """Handle manual IP input."""
+        errors = {}
+
+        if user_input is not None:
+            # Validate the IP address
             try:
-                response = requests.get(f"http://{ip}", timeout=timeout)
-                if "solutronic" in response.text.lower():
-                    devices.append(str(ip))
-            except (requests.ConnectionError, requests.Timeout):
-                continue
+                requests.get(f"http://{user_input[CONF_HOST]}", timeout=DEFAULT_TIMEOUT)
+                return self.async_create_entry(title="Solutronic", data=user_input)
+            except requests.RequestException:
+                errors["base"] = "cannot_connect"
 
-        return devices
+        return self.async_show_form(
+            step_id="manual_input",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_HOST): str,
+                    vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): int,
+                }
+            ),
+            errors=errors,
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Return the options flow handler."""
+        return SolutronicOptionsFlowHandler(config_entry)
+
+
+class SolutronicOptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle options flow for Solutronic."""
+
+    def __init__(self, config_entry):
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input=None) -> FlowResult:
+        """Manage the options for the integration."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_SCAN_INTERVAL, default=self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)): int,
+                }
+            ),
+        )
