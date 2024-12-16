@@ -1,9 +1,11 @@
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers import discovery
-from .const import DOMAIN
+"""Solutronic integration for Home Assistant"""
 
-async def async_setup(hass: HomeAssistant, config: dict):
+from homeassistant.core import Config, HomeAssistant
+
+DOMAIN = "solutronic"
+
+
+async def async_setup(hass: HomeAssistant, config: Config):
     """Set up the Solutronic integration."""
     hass.data[DOMAIN] = {}
-    discovery.load_platform(hass, "sensor", DOMAIN, {}, config)
     return True
