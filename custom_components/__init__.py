@@ -1,11 +1,9 @@
-"""Solutronic integration for Home Assistant"""
+"""The Solutronic integration"""
 
-from homeassistant.core import Config, HomeAssistant
+from homeassistant import config_entries, core
 
 DOMAIN = "solutronic"
 
-
-async def async_setup(hass: HomeAssistant, config: Config):
-    """Set up the Solutronic integration."""
-    hass.data[DOMAIN] = {}
+async def async_setup(hass: core.HomeAssistant, config: dict):
+    """Set up the Solutronic component"""
     return True
