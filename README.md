@@ -1,5 +1,7 @@
 # Solutronic Solar Inverter Integration for Home Assistant
 
+## UNDER DEVELOPMENT!
+
 This integration retrieves data from a Solutronic device and makes it available as sensors in Home Assistant.
 
 ## Features
