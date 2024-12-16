@@ -1,0 +1,1 @@
+# Solutronic Home Assistant integration
