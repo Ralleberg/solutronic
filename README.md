@@ -17,6 +17,7 @@ Since version v1.4.0 the minimal supported version of Home Assistant is 2024.5.0
 This integration can be installed using HACS:
 - Add `https://github.com/Ralleberg/solutronic` as an custom repository
 - Search for `Solutronic` in *Integrations* section.
+- Follow the instructions and/or add the known IP-address for the Solutronic device
  
 ### Manual
 
