@@ -1,6 +1,6 @@
 """The Solutronic integration"""
-
 from homeassistant import config_entries, core
+from .sensor import SolutronicSensor  # Import af sensoren fra den nye mappe
 
 DOMAIN = "solutronic"
 
