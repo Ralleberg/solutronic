@@ -1,0 +1,1 @@
+# Solutronix Home Assistant integration
