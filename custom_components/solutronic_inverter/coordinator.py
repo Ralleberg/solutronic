@@ -38,7 +38,6 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                 html = await async_get_raw_html(self.ip_address)
 
                 # Extract manufacturer and model from <h1> header
-                # Example: <h1>SOLPLUS 100<br>Solutronic AG</h1>
                 if "<h1>" in html:
                     header = html.split("<h1>")[1].split("</h1>")[0]
                     parts = [line.strip() for line in header.replace("<br>", "\n").split("\n") if line.strip()]
@@ -47,7 +46,6 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                         self.device_manufacturer = parts[1]
 
                 # Extract firmware version
-                # Example: FW-Release: 1.42
                 if "FW-Release" in html:
                     fw_line = html.split("FW-Release:")[1].split("<")[0].strip()
                     self.device_firmware = fw_line
@@ -57,7 +55,6 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                 pass
 
             # --- Fail-safe total AC power calculation (PAC_TOTAL) ---
-            # Sum only the phases that exist and contain numeric values.
             pac_values = []
             for key in ("PACL1", "PACL2", "PACL3"):
                 value = data.get(key)
@@ -65,10 +62,8 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                     pac_values.append(value)
 
             if pac_values:
-                # At least one valid phase available → calculate total
                 data["PAC_TOTAL"] = sum(pac_values)
             else:
-                # No valid phase data → remove PAC_TOTAL to avoid "unavailable"
                 data.pop("PAC_TOTAL", None)
 
             # Store latest valid dataset for fallback use
@@ -83,12 +78,27 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                 err,
             )
 
-            # Use previous dataset to prevent sensors from showing 'unknown'
+            # If previous data exists → reuse it to avoid "unavailable"
             if self._last_data is not None:
                 return self._last_data
 
-            # If no previous data exists, raise failure for Home Assistant to handle
-            raise UpdateFailed(f"Unable to fetch data from inverter: {err}") from err
+            # No previous data (e.g. HA started while inverter is off):
+            # return zero dataset to ensure stable sensor availability.
+            zero_data = {}
+
+            fallback_keys = [
+                "PAC", "PAC_TOTAL", "PACL1", "PACL2", "PACL3",
+                "UDC1", "UDC2", "UDC3",
+                "IDC1", "IDC2", "IDC3",
+                "ET", "EG", "MAXP", "ETA",
+                "UACL1", "UACL2", "UACL3",
+            ]
+
+            for key in fallback_keys:
+                zero_data[key] = 0
+
+            self._last_data = zero_data
+            return zero_data
 
     async def async_validate_connection(self):
         """Used by config flow to verify connectivity before setup."""
