@@ -78,27 +78,35 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                 err,
             )
 
-            # If previous data exists → reuse it to avoid "unavailable"
-            if self._last_data is not None:
-                return self._last_data
+            # Last known dataset (may be None)
+            last = self._last_data or {}
 
-            # No previous data (e.g. HA started while inverter is off):
-            # return zero dataset to ensure stable sensor availability.
-            zero_data = {}
+            # Keys that should retain last known values (energy data)
+            retain_keys = ["ET", "EG"]  # Daily + Lifetime energy
 
-            fallback_keys = [
-                "PAC", "PAC_TOTAL", "PACL1", "PACL2", "PACL3",
+            # Keys that should be zero when inverter is offline
+            zero_keys = [
+                "PAC", "PAC_TOTAL",
+                "PACL1", "PACL2", "PACL3",
                 "UDC1", "UDC2", "UDC3",
                 "IDC1", "IDC2", "IDC3",
-                "ET", "EG", "MAXP", "ETA",
+                "MAXP", "ETA",
                 "UACL1", "UACL2", "UACL3",
             ]
 
-            for key in fallback_keys:
-                zero_data[key] = 0
+            fallback = {}
 
-            self._last_data = zero_data
-            return zero_data
+            # Set zero-values
+            for key in zero_keys:
+                fallback[key] = 0
+
+            # Restore ET + EG from last known values if available
+            for key in retain_keys:
+                fallback[key] = last.get(key, 0)
+
+            # Store fallback as the new last known state
+            self._last_data = fallback
+            return fallback
 
     async def async_validate_connection(self):
         """Used by config flow to verify connectivity before setup."""
