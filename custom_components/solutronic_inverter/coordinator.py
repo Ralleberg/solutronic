@@ -34,11 +34,10 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
             data = await async_get_sensor_data(self.ip_address)
 
             # --- Parse device metadata from raw HTML ---
-            # We only fetch raw HTML occasionally because it is lightweight.
             try:
                 html = await async_get_raw_html(self.ip_address)
 
-                # Extract manufacturer and model from the <h1> tag
+                # Extract manufacturer and model from <h1> header
                 # Example: <h1>SOLPLUS 100<br>Solutronic AG</h1>
                 if "<h1>" in html:
                     header = html.split("<h1>")[1].split("</h1>")[0]
@@ -48,22 +47,29 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                         self.device_manufacturer = parts[1]
 
                 # Extract firmware version
-                # Example: "FW-Release: 1.42"
+                # Example: FW-Release: 1.42
                 if "FW-Release" in html:
                     fw_line = html.split("FW-Release:")[1].split("<")[0].strip()
                     self.device_firmware = fw_line
 
             except Exception:
-                # Never block telemetry if metadata parsing fails
+                # Metadata parsing errors should never stop telemetry updates
                 pass
 
-            # Calculate total AC power (PAC_TOTAL) if all phases are present
-            if all(k in data for k in ("PACL1", "PACL2", "PACL3")):
-                try:
-                    data["PAC_TOTAL"] = data["PACL1"] + data["PACL2"] + data["PACL3"]
-                except Exception:
-                    # If conversion fails, ignore calculation silently
-                    pass
+            # --- Fail-safe total AC power calculation (PAC_TOTAL) ---
+            # Sum only the phases that exist and contain numeric values.
+            pac_values = []
+            for key in ("PACL1", "PACL2", "PACL3"):
+                value = data.get(key)
+                if isinstance(value, (int, float)):
+                    pac_values.append(value)
+
+            if pac_values:
+                # At least one valid phase available → calculate total
+                data["PAC_TOTAL"] = sum(pac_values)
+            else:
+                # No valid phase data → remove PAC_TOTAL to avoid "unavailable"
+                data.pop("PAC_TOTAL", None)
 
             # Store latest valid dataset for fallback use
             self._last_data = data

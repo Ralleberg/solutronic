@@ -13,6 +13,7 @@ from .const import DOMAIN
 # KEY: (Friendly name, Unit, Device Class, State Class, Icon)
 SENSORS = {
     "PAC": ("AC Effekt", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:solar-power"),
+    "PAC_TOTAL": ("Samlet AC Effekt", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:solar-power"),
 
     "PACL1": ("L1 Effekt", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:solar-panel"),
     "PACL2": ("L2 Effekt", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:solar-panel"),
@@ -42,15 +43,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Set up sensors when config entry is added."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    # Calculate total AC power if per-phase data is available
-    data = coordinator.data
-    if all(k in data for k in ("PACL1", "PACL2", "PACL3")):
-        data["PAC_TOTAL"] = data["PACL1"] + data["PACL2"] + data["PACL3"]
-
+    # Create a sensor entity for each supported key that is present in fetched data
     entities = [
         SolutronicSensor(coordinator, key, *values)
         for key, values in SENSORS.items()
-        if key in coordinator.data or key == "PAC_TOTAL"
+        if key in coordinator.data
     ]
 
     async_add_entities(entities)
@@ -78,9 +75,6 @@ class SolutronicSensor(CoordinatorEntity, SensorEntity):
     def device_info(self):
         """
         Return dynamic device info using metadata parsed in the data coordinator.
-
-        This groups all sensors under a single device and allows Home Assistant
-        to display model, manufacturer, and firmware in Device Info.
         """
         return {
             "identifiers": {(DOMAIN, self.coordinator.ip_address)},
