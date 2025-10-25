@@ -4,15 +4,20 @@
     "step": {
       "user": {
         "title": "Opsætning af Solutronic Inverter",
-        "description": "Indtast IP-adressen på din Solutronic inverter.",
+        "description": "Indtast IP-adressen eller søg automatisk efter inverteren.",
         "data": {
           "ip_address": "IP-adresse",
-          "scan_interval": "Opdateringsinterval (sekunder)"
+          "scan_network": "Scan lokalt netværk automatisk"
         }
+      },
+      "scan": {
+        "title": "Scanner...",
+        "description": "Scanner dit netværk for en Solutronic inverter..."
       }
     },
     "error": {
-      "cannot_connect": "Kunne ikke forbinde til inverteren. Kontroller IP-adressen."
+      "cannot_connect": "Kunne ikke forbinde til inverteren.",
+      "no_devices_found": "Ingen Solutronic inverter blev fundet på dit netværk."
     }
   }
 }
