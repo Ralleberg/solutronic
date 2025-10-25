@@ -93,17 +93,6 @@ Hvis sensorer ikke opdaterer:
 
 ---
 
-## 🤝 Bidrag
-
-PR’s er meget velkomne!  
-Især:
-- Nye modeller
-- Oversættelser
-- Lovelace UI-kort
-
----
-
 ## ❤️ Credits
 
 Udviklet til det åbne Home Assistant community.
-
