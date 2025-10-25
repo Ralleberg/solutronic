@@ -1,9 +1,12 @@
 import logging
+from datetime import timedelta
+
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from .solutronic_api import async_get_sensor_data
 from .const import DEFAULT_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
     """Koordinator der poller Solutronic inverteren periodisk."""
@@ -13,7 +16,7 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name="Solutronic Inverter",
-            update_interval=hass.helpers.event.dt.timedelta(seconds=DEFAULT_SCAN_INTERVAL),
+            update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
         )
         self.ip_address = ip_address
 
