@@ -2,10 +2,9 @@
   "domain": "solutronic_inverter",
   "name": "Solutronic Integration",
   "version": "1.0.0",
-  "documentation": "https://github.com/Ralleberg/solutronic_inverter",
-  "requirements": ["beautifulsoup4"],
+  "documentation": "https://github.com/Ralleberg/solutronic",
+  "requirements": ["beautifulsoup4", "requests"],
   "codeowners": ["@Ralleberg"],
   "config_flow": true,
-  "iot_class": "local_polling",
-  "icon": "icon_small.png"
+  "iot_class": "local_polling"
 }
