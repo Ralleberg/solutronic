@@ -2,7 +2,8 @@ import logging
 from datetime import timedelta
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from .solutronic_api import async_get_sensor_data, async_get_raw_html
+from .solutronic_api import async_get_sensor_data, async_get_raw_html, async_get_mac
+from .discovery import discover_solutronic  # used for auto-reconnect scan
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,6 +22,9 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
 
         self.ip_address = ip_address
         self._last_data = None  # Store last known valid data for fallback
+
+        # Used to avoid repeating bridge-mode warning log
+        self._bridge_warning_logged = False
 
         # Default device metadata (will be replaced automatically after first fetch)
         self.device_manufacturer = "Solutronic"
@@ -78,7 +82,22 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                 err,
             )
 
-            # Last known dataset (may be None)
+            # ---- Docker Bridge Mode Detection (no ARP visibility) ----
+            try:
+                mac = await async_get_mac(self.ip_address)
+                if mac is None and not self._bridge_warning_logged:
+                    _LOGGER.warning(
+                        "Auto-reconnect disabled: Home Assistant appears to be running in Docker bridge mode "
+                        "(no ARP visibility). The integration will continue working, "
+                        "but automatic IP recovery will not be available. "
+                        "Use host network mode to enable auto-reconnect."
+                    )
+                    self._bridge_warning_logged = True
+            except Exception:
+                pass
+
+            # ---- Controlled fallback data behavior ----
+
             last = self._last_data or {}
 
             # Keys that should retain last known values (energy data)
@@ -96,15 +115,14 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
 
             fallback = {}
 
-            # Set zero-values
+            # Set zero-values for momentary readings
             for key in zero_keys:
                 fallback[key] = 0
 
-            # Restore ET + EG from last known values if available
+            # Restore ET + EG (energy totals) if known
             for key in retain_keys:
                 fallback[key] = last.get(key, 0)
 
-            # Store fallback as the new last known state
             self._last_data = fallback
             return fallback
 

@@ -111,6 +111,22 @@ the integration will still work, but *automatic IP recovery will be disabled*.
 
 ---
 
+### Docker Network Mode Considerations
+
+For automatic IP re-discovery (auto-reconnect), the integration requires ARP visibility.
+
+| Network Mode | Auto-Reconnect | Notes |
+|---|---|---|
+| Home Assistant OS | ✅ Works |
+| Supervised | ✅ Works |
+| Docker (host network) | ✅ Works |
+| Docker (bridge network) | ⚠️ Disabled — MAC cannot be resolved |
+
+If running in Docker bridge mode, the integration will continue to function,
+but the inverter IP must be manually updated if it changes (e.g., DHCP).
+
+---
+
 ## ❤️ Credits
 
 Udviklet til det åbne Home Assistant community.
