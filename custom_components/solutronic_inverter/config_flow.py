@@ -1,8 +1,12 @@
+import logging
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from .const import DOMAIN, CONF_IP_ADDRESS
 from .coordinator import SolutronicDataUpdateCoordinator
+
+# Tilføjet logger
+_LOGGER = logging.getLogger(__name__)
 
 
 class SolutronicInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -19,11 +23,13 @@ class SolutronicInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             try:
                 await coordinator.async_validate_connection()
-            except Exception:
+            except Exception as e:
+                # Log den faktiske fejl i HA-loggen
+                _LOGGER.error("Solutronic forbindelsestest mislykkedes: %s", e)
                 errors["base"] = "cannot_connect"
             else:
                 return self.async_create_entry(
-                    title=f"Solutronic {ip}",
+                    title=f"Solutronic @ {ip}",
                     data={CONF_IP_ADDRESS: ip}
                 )
 
