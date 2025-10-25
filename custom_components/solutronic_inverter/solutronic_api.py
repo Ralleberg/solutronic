@@ -1,17 +1,19 @@
 import aiohttp
 from bs4 import BeautifulSoup
+import asyncio
 
 DEFAULT_PORT = 8888
 DEFAULT_PATH = "/solutronic/"
+
 
 def _normalize_url(ip_address: str) -> str:
     """
     Normalize the address to always form a valid inverter URL.
 
     Examples handled:
-      "192.168.1.50"  → "http://192.168.1.50:8888/solutronic/"
-      "192.168.1.50:8888"  → "http://192.168.1.50:8888/solutronic/"
-      "http://192.168.1.50/solutronic" → "http://192.168.1.50:8888/solutronic/"
+      "192.168.1.1"  → "http://192.168.1.1:8888/solutronic/"
+      "192.168.1.1:8888"  → "http://192.168.1.1:8888/solutronic/"
+      "http://192.168.1.1/solutronic" → "http://192.168.1.1:8888/solutronic/"
     """
     address = ip_address.strip()
 
@@ -76,3 +78,24 @@ async def async_get_sensor_data(ip_address: str):
                 data[key] = value
 
     return data
+
+
+async def async_get_mac(ip_address: str):
+    """
+    Return MAC address for a host using ARP resolution.
+    Works on HA OS, Supervised, and Docker (host network mode).
+    Returns None if MAC cannot be determined.
+    """
+    proc = await asyncio.create_subprocess_shell(
+        f"arp -n {ip_address}",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, _ = await proc.communicate()
+    output = stdout.decode().lower()
+
+    for part in output.split():
+        if ":" in part and len(part) == 17:
+            return part.strip()
+
+    return None
