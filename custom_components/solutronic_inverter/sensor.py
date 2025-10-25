@@ -68,10 +68,10 @@ class SolutronicSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        """Group all sensors under a single device in Home Assistant UI."""
+        """Return device information for grouping all sensors under one device."""
         return {
             "identifiers": {(DOMAIN, self.coordinator.ip_address)},
-            "name": "Solutronic Inverter",
-            "manufacturer": "Solutronic AG",
-            "model": "SolPlus",
+            "name": self.coordinator.model,        # displayed device name
+            "manufacturer": self.coordinator.manufacturer,
+            "model": self.coordinator.model,
         }
