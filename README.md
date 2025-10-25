@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Ralleberg/solutronic_inverter/main/custom_components/solutronic_inverter/icons/banner.png" width="800" alt="Solutronic Inverter Banner">
+</p>
+
 # Solutronic Inverter Integration for Home Assistant
 
 This integration retrieves real-time operational data from **Solutronic SOLPLUS / Solutronic AG** solar inverters and exposes it as sensors in Home Assistant.  
@@ -35,7 +39,7 @@ The data can be used in dashboards, the Energy panel, automations, and history g
 
 1. Open **HACS → Integrations**
 2. Click **⋮ → Custom repositories**
-3. Add: https://github.com/Ralleberg/solutronic as *Integration*
+3. Add: https://github.com/Ralleberg/solutronic_inverter as *Integration*
 4. Search for **Solutronic Inverter** and install
 5. Restart Home Assistant
 6. Go to:
