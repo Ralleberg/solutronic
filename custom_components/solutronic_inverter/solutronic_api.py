@@ -9,37 +9,45 @@ async def async_get_sensor_data(ip_address: str):
             html_data = await response.text()
 
     soup = BeautifulSoup(html_data, "html.parser")
-
     data = {}
 
     # ------------------------------------------------------------------
-    # Extract model + manufacturer from <h1> block if available
-    # Example structure:
-    #
-    #   <h1>
-    #     SOLPLUS 100
-    #     <br>
-    #     Solutronic AG
-    #   </h1>
+    # Extract model + manufacturer from <h1>
     # ------------------------------------------------------------------
     h1 = soup.find("h1")
     manufacturer = "Solutronic"
     model = "Inverter"
 
     if h1:
-        # Split by line breaks (BS4 preserves text separated by <br>)
         lines = [line.strip() for line in h1.text.strip().split("\n") if line.strip()]
         if len(lines) >= 1:
             model = lines[0]
         if len(lines) >= 2:
             manufacturer = lines[1]
 
-    # Store values under internal keys
     data["_manufacturer"] = manufacturer
     data["_model"] = model
 
     # ------------------------------------------------------------------
-    # Extract tabular measurement data
+    # Extract firmware and build info near top of page
+    # Example:
+    # FW-Release: 1.42
+    # Build: Aug 15 2012 16:56:39
+    # ------------------------------------------------------------------
+    page_text = soup.text
+    for line in page_text.splitlines():
+        line = line.strip()
+        if line.startswith("FW-Release"):
+            data["_firmware"] = line.replace("FW-Release:", "").strip()
+        elif line.startswith("Build:"):
+            data["_build"] = line.replace("Build:", "").strip()
+
+    # Defaults if nothing found
+    data.setdefault("_firmware", "Unknown")
+    data.setdefault("_build", "Unknown")
+
+    # ------------------------------------------------------------------
+    # Extract table sensor values
     # ------------------------------------------------------------------
     table = soup.find("table")
     if table:
@@ -48,16 +56,11 @@ async def async_get_sensor_data(ip_address: str):
             cols = row.find_all("td")
             if len(cols) == 4:
                 key = cols[1].text.strip()
-
-                # Clean the numeric/text value
                 raw = cols[3].text.strip().replace("\xa0", "").strip()
-
-                # Convert to number if possible
                 try:
                     value = float(raw.replace(",", "."))
                 except ValueError:
-                    value = raw  # fallback: keep as string
-
+                    value = raw
                 data[key] = value
 
     return data

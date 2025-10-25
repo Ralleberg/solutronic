@@ -36,6 +36,11 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
             # These keys are injected by solutronic_api.py
             self.manufacturer = data.get("_manufacturer", self.manufacturer)
             self.model = data.get("_model", self.model)
+            # Get firmware, build, and serial number with fallbacks
+            self.firmware = data.get("_firmware", getattr(self, "firmware", "Unknown"))
+            self.build = data.get("_build", getattr(self, "build", "Unknown"))
+            self.serial = data.get("SN", getattr(self, "serial", "Unknown"))
+
 
             # Calculate total AC power (PAC_TOTAL) if all phases are present
             if all(k in data for k in ("PACL1", "PACL2", "PACL3")):

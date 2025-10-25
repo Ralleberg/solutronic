@@ -66,12 +66,15 @@ class SolutronicSensor(CoordinatorEntity, SensorEntity):
         """Return the current sensor value."""
         return self.coordinator.data.get(self._key)
 
-    @property
-    def device_info(self):
-        """Return device information for grouping all sensors under one device."""
-        return {
-            "identifiers": {(DOMAIN, self.coordinator.ip_address)},
-            "name": self.coordinator.model,        # displayed device name
-            "manufacturer": self.coordinator.manufacturer,
-            "model": self.coordinator.model,
-        }
+@property
+def device_info(self):
+    """Return device information for grouping all sensors under one device."""
+    return {
+        "identifiers": {(DOMAIN, self.coordinator.ip_address)},
+        "name": self.coordinator.model,
+        "manufacturer": self.coordinator.manufacturer,
+        "model": self.coordinator.model,
+        "sw_version": getattr(self.coordinator, "firmware", None),
+        "hw_version": getattr(self.coordinator, "build", None),
+        "serial_number": getattr(self.coordinator, "serial", None),
+    }
