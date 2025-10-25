@@ -3,14 +3,26 @@
   "config": {
     "step": {
       "user": {
-        "title": "Add Solutronic Inverter",
+        "title": "Connect to Solutronic Inverter",
+        "description": "Enter the IP address of the inverter.",
         "data": {
-          "ip_address": "IP address"
+          "ip_address": "IP Address"
         }
       }
     },
     "error": {
-      "cannot_connect": "Cannot connect to Solutronic inverter"
+      "cannot_connect": "Could not connect to the inverter. Verify network access and try again."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Solutronic Inverter Options",
+        "description": "Adjust polling behavior.",
+        "data": {
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
     }
   }
 }
