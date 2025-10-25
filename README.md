@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/Ralleberg/solutronic_inverter/blob/main/custom_components/banner.png?raw=true" width="800" alt="Solutronic Inverter Banner">
+  <img src="https://github.com/Ralleberg/solutronic_inverter/blob/main/custom_components/solutronic_inverter/banner.png?raw=true" width="800" alt="Solutronic Inverter Banner">
 </p>
 
 # Solutronic Inverter Integration for Home Assistant
