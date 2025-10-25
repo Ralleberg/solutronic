@@ -1,4 +1,16 @@
 {
-    "title": "Solutronic Integration",
-    "description": "Integration for fetching data from Solutronic devices."
+  "title": "Solutronic Inverter",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Solutronic Inverter",
+        "data": {
+          "ip_address": "IP address"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to Solutronic inverter"
+    }
+  }
 }

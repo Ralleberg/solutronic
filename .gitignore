@@ -5,13 +5,14 @@ __pycache__
 */build/*
 */dist/*
 
-
 # misc
 .coverage
 .vscode
 coverage.xml
 
-
 # Home Assistant configuration
 config/*
 !config/configuration.yaml
+
+# local development test server
+fake_solutronic_server.py

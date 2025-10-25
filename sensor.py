@@ -1,69 +1,39 @@
-from homeassistant.components.sensor import SensorEntity
-from homeassistant.const import ENERGY_KILO_WATT_HOUR, POWER_WATT
+from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 
-class SolutronicSensor(CoordinatorEntity, SensorEntity):
-    """Representation of a Solutronic sensor."""
+SENSORS = {
+    "PAC": ("Solutronic Leistung AC", "W", "power", "mdi:solar-power"),
+    "PACL1": ("Solutronic Power L1", "W", "power", "mdi:solar-panel"),
+    "PACL2": ("Solutronic Power L2", "W", "power", "mdi:solar-panel"),
+    "PACL3": ("Solutronic Power L3", "W", "power", "mdi:solar-panel"),
+    "UDC1": ("Solutronic UDC 1", "V", "voltage", "mdi:flash-triangle"),
+    "UDC2": ("Solutronic UDC 2", "V", "voltage", "mdi:flash-triangle"),
+    "UDC3": ("Solutronic UDC 3", "V", "voltage", "mdi:flash-triangle"),
+    "IDC1": ("Solutronic DC current 1", "A", "current", "mdi:current-dc"),
+    "IDC2": ("Solutronic DC current 2", "A", "current", "mdi:current-dc"),
+    "IDC3": ("Solutronic DC current 3", "A", "current", "mdi:current-dc"),
+    "ET": ("Solutronic Energy Today", "kWh", "energy", "mdi:solar-power"),
+    "EG": ("Solutronic Energy Total", "kWh", "energy", "mdi:solar-power"),
+    "ETA": ("Solutronic Efficiency", "%", "power_factor", "mdi:solar-power-variant"),
+}
 
-    def __init__(self, coordinator, sensor_name, unit, device_class=None, state_class=None):
+async def async_setup_entry(hass, entry, async_add_entities):
+    coordinator = hass.data[DOMAIN][entry.entry_id]
+    entities = [SolutronicSensor(coordinator, key, *vals) for key, vals in SENSORS.items()]
+    async_add_entities(entities)
+
+class SolutronicSensor(CoordinatorEntity, Entity):
+    def __init__(self, coordinator, key, name, unit, device_class, icon):
         super().__init__(coordinator)
-        self._sensor_name = sensor_name
-        self._unit = unit
-        self._device_class = device_class
-        self._state_class = state_class
-        self._attr_unique_id = f"solutronic_{sensor_name}"
-        self._attr_name = f"Solutronic {sensor_name}"
+        self._key = key
+        self._attr_name = name
+        self._attr_unit_of_measurement = unit
+        self._attr_device_class = device_class
+        self._attr_icon = icon
+        self._attr_unique_id = f"{coordinator.ip_address}_{key}"
 
     @property
-    def native_value(self):
-        """Return the state of the sensor."""
-        return self.coordinator.data.get(self._sensor_name)
-
-    @property
-    def native_unit_of_measurement(self):
-        """Return the unit of measurement."""
-        return self._unit
-
-    @property
-    def device_class(self):
-        """Return the device class."""
-        return self._device_class
-
-    @property
-    def state_class(self):
-        """Return the state class."""
-        return self._state_class
-
-
-class SolutronicTotalPowerSensor(SensorEntity):
-    """Representation of the total power sensor for Solutronic."""
-
-    def __init__(self, coordinator, sensors):
-        self._coordinator = coordinator
-        self._sensors = sensors
-        self._attr_unique_id = "solutronic_total_power"
-        self._attr_name = "Solutronic Total Power"
-        self._attr_native_unit_of_measurement = POWER_WATT
-        self._attr_device_class = "power"
-        self._attr_state_class = "total_increasing"
-        self._attr_icon = "mdi:solar-power"
-
-    @property
-    def native_value(self):
-        """Calculate and return the total power."""
-        try:
-            total_power = sum(
-                float(self._coordinator.data.get(sensor, 0)) for sensor in self._sensors
-            )
-            return total_power
-        except (TypeError, ValueError):
-            return None
-
-    @property
-    def extra_state_attributes(self):
-        """Return the extra attributes for the total power sensor."""
-        attributes = {}
-        for sensor in self._sensors:
-            attributes[sensor] = self._coordinator.data.get(sensor, 0)
-        return attributes
+    def state(self):
+        data = self.coordinator.data
+        return data.get(self._key)

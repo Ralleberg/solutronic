@@ -1,5 +1,5 @@
 """Constants for the Solutronic integration."""
 
-NAME = "Solutronic solar inverter"
-DOMAIN = "solutronic"
-VERSION = "1.0.0"
+DOMAIN = "solutronic_inverter"
+CONF_IP_ADDRESS = "ip_address"
+DEFAULT_SCAN_INTERVAL = 30

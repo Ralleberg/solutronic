@@ -1,10 +1,16 @@
 {
-    "title": "Solutronic",
-    "data": {
-      "host": "Indtast IP-adresse"
+  "title": "Solutronic Inverter",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tilføj Solutronic Inverter",
+        "data": {
+          "ip_address": "IP addresse"
+        }
+      }
     },
-    "errors": {
-      "no_devices_found": "Ingen enheder fundet på netværket."
+    "error": {
+      "cannot_connect": "Kan ikke forbinde til Solutronic inverter"
     }
   }
-  
+}
