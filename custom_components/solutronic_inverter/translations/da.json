@@ -3,26 +3,16 @@
   "config": {
     "step": {
       "user": {
-        "title": "Tilslut Solutronic Inverter",
-        "description": "Indtast inverterens IP-adresse.",
+        "title": "Opsætning af Solutronic Inverter",
+        "description": "Indtast IP-adressen på din Solutronic inverter.",
         "data": {
-          "ip_address": "IP-adresse"
+          "ip_address": "IP-adresse",
+          "scan_interval": "Opdateringsinterval (sekunder)"
         }
       }
     },
     "error": {
-      "cannot_connect": "Kunne ikke forbinde til inverteren. Kontroller netværksadgang og prøv igen."
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Solutronic indstillinger",
-        "description": "Juster indstillingen for opdateringsfrekvens.",
-        "data": {
-          "scan_interval": "Opdateringsinterval (sekunder)"
-        }
-      }
+      "cannot_connect": "Kunne ikke forbinde til inverteren. Kontroller IP-adressen."
     }
   }
 }
