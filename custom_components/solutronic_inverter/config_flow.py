@@ -5,12 +5,13 @@ from homeassistant.core import callback
 
 from .const import DOMAIN, CONF_IP_ADDRESS, DEFAULT_SCAN_INTERVAL
 from .coordinator import SolutronicDataUpdateCoordinator
+from .discovery import discover_solutronic  # <-- NEW
 
 _LOGGER = logging.getLogger(__name__)
 
 
 def _clean_ip(value: str) -> str:
-    """Clean user input so only a raw IP remains."""
+    """Normalize user input so only a raw IP remains."""
     value = value.replace("http://", "").replace("https://", "")
     value = value.replace("/solutronic/", "").replace("/solutronic", "")
     if ":" in value:
@@ -26,25 +27,51 @@ class SolutronicInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input=None):
         errors = {}
 
-        if user_input is not None:
-            # Clean IP input
+        # If a scan button was pressed (no IP entered yet)
+        if user_input is not None and user_input.get("scan_network") is True:
+            # Attempt automatic device discovery
+            ips = await discover_solutronic()
+
+            if ips:
+                ip = ips[0]
+                _LOGGER.info("Solutronic inverter discovered at %s", ip)
+
+                # Validate discovered IP
+                coordinator = SolutronicDataUpdateCoordinator(self.hass, ip, DEFAULT_SCAN_INTERVAL)
+                try:
+                    await coordinator.async_validate_connection()
+                except Exception as e:
+                    errors["base"] = "cannot_connect"
+                else:
+                    return self.async_create_entry(
+                        title=f"Solutronic @ {ip}",
+                        data={CONF_IP_ADDRESS: ip},
+                    )
+            else:
+                errors["base"] = "no_devices_found"
+
+        # If a manual IP was submitted
+        if user_input is not None and "scan_network" not in user_input:
             ip = _clean_ip(user_input[CONF_IP_ADDRESS])
             coordinator = SolutronicDataUpdateCoordinator(self.hass, ip, DEFAULT_SCAN_INTERVAL)
 
             try:
-                # Validate connection
                 await coordinator.async_validate_connection()
             except Exception as e:
                 _LOGGER.error("Solutronic connection test failed: %s", e)
                 errors["base"] = "cannot_connect"
             else:
-                # Save config entry
                 return self.async_create_entry(
                     title=f"Solutronic @ {ip}",
                     data={CONF_IP_ADDRESS: ip}
                 )
 
-        schema = vol.Schema({vol.Required(CONF_IP_ADDRESS): str})
+        # Form UI: manual IP + auto-scan button
+        schema = vol.Schema({
+            vol.Optional(CONF_IP_ADDRESS, default=""): str,
+            vol.Optional("scan_network", default=False): bool,
+        })
+
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
     @staticmethod
@@ -63,10 +90,6 @@ class SolutronicInverterOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        # Provide only meaningful scan interval values:
-        # 4 seconds = maximum update speed (device refresh rate)
-        # 10 seconds = recommended default for normal usage
-        # 30 seconds = low network load option
         schema = vol.Schema({
             vol.Optional(
                 "scan_interval",
