@@ -4,98 +4,109 @@
 
 # Solutronic Solar Inverter Integration for Home Assistant
 
-Denne integration gør det muligt at hente data direkte fra Solutronic SOLPLUS invertere og vise dem som sensorer i Home Assistant, inkl. understøttelse af Energy Dashboard.
+This integration allows Home Assistant to retrieve live data from Solutronic SOLPLUS inverters and expose them as sensors, including full support for the **Home Assistant Energy Dashboard**.
 
 ---
 
-## ✨ Funktioner
+## ✨ Features
 
-- Automatisk eller manuel konfiguration af inverter IP-adresse
-- Live AC-effekt (PAC og samlet total PAC_TOTAL)
-- Energi i dag (ET) og total energi (EG) — **kompatibel med Home Assistant Energy Dashboard**
-- DC spændinger, DC strømme, netspændinger pr. fase
-- Effektivitet og maksimal effekt i dag
-- Automatisk udtræk af:
+- Automatic or manual inverter IP discovery
+- Live AC output power:
+  - `PAC` (instant power)
+  - `PAC_TOTAL` (sum of all available phases)
+- Daily energy (ET) and lifetime energy (EG)  
+  → **compatible with the Home Assistant Energy Dashboard**
+- DC voltages, DC currents, and AC phase voltages
+- Efficiency metrics and maximum power today
+- Automatic extraction of:
   - **Model**
   - **Manufacturer**
-  - **Firmware-version**
-- Stabil fejl-tolerance → data forbliver synligt selv hvis inverteren midlertidigt ikke svarer
+  - **Firmware version**
+- Stable fault-tolerance → sensors remain available even when the inverter temporarily goes offline (e.g., at night)
 
 ---
 
-## 🏡 Understøttede modeller
+## 🏡 Supported Models
 
-| Model | Testet | Noter |
+| Model | Tested | Notes |
 |------|:------:|------|
-| SOLPLUS 100 | ✅ | Fuldt understøttet |
-| SOLPLUS 50 | ⚠️ | Forventes at virke |
-| SOLPLUS 35 | ⚠️ | Forventes at virke |
+| SOLPLUS 100 | ✅ | Fully supported |
+| SOLPLUS 50 | ⚠️ | Expected to work |
+| SOLPLUS 35 | ⚠️ | Expected to work |
 
-Hvis du har en anden model, del gerne en `index.html`/`stat.xml` så tilføjer vi understøttelse.
+If you have another model, please share an `index.html` / `stat.xml` sample for compatibility support.
 
 ---
 
 ## 📦 Installation
 
-### Via [HACS](https://hacs.xyz/) (Anbefalet)
+### Via [HACS](https://hacs.xyz/) (Recommended)
 
-1. Åbn **HACS → Integrations**
-2. Tryk på **⋮** → **Custom repositories**
-3. Tilføj: https://github.com/Ralleberg/solutronic_inverter som *Integration*
-4. Søg efter **Solutronic Inverter** og installer
-5. Genstart Home Assistant
-6. Tilføj integrationen via:
-**Indstillinger → Enheder & Tjenester → Tilføj integration → "Solutronic Inverter"**
+1. Open **HACS → Integrations**
+2. Click **⋮** → **Custom repositories**
+3. Add: https://github.com/Ralleberg/solutronic_inverter (Select *Integration*)
+4. Search for **Solutronic Inverter** and install
+5. Restart Home Assistant
+6. Add the integration via:  
+**Settings → Devices & Services → Add Integration → "Solutronic Inverter"**
 
-### Manuel installation
+### Manual Installation
 
-Kopiér mappen: custom_components/solutronic_inverter
-til: /config/custom_components/solutronic_inverter
+Copy the folder:
 
-Genstart Home Assistant.
+**custom_components/solutronic_inverter**
+into: **/config/custom_components/solutronic_inverter**
+
+
+Restart Home Assistant.
 
 ---
 
-## ⚡ Konfiguration
+## ⚡ Configuration
 
-Når du tilføjer integrationen, angiv IP-adressen på din inverter.
+When adding the integration, enter the IP address of the inverter.
 
-Du kan skrive:
+Examples (all accepted):
+
 192.168.1.1
 192.168.1.1:8888
 http://192.168.1.1/solutronic/
 
-Integrationens URL-håndtering **normaliserer automatisk** formatet.
+The integration **automatically normalizes the URL**.
 
 ---
 
-## 📊 Energy Dashboard Opsætning
+## 📊 Energy Dashboard Setup
 
-Tilføj følgende sensorer:
+Add the following sensors:
 
-| Sensor | Vælg som |
+| Sensor | Select as |
 |---|---|
 | `sensor.solutronic_dagens_produktion` | Solar production (kWh) |
-| `sensor.solutronic_total_produktion` | Lifetime total (kWh) |
+| `sensor.solutronic_total_produktion` | Lifetime production (kWh) |
 
-`PAC_TOTAL` kan tilføjes som **Real-time solar power**.
+Optionally add:
 
----
-
-## 🐞 Fejlfinding
-
-Hvis sensorer ikke opdaterer:
-
-1. Kontroller at inverterens web-interface svarer i browseren
-2. Tjek firewall på din computer / router
-3. Genstart integrationen via:
-   Developer Tools → **Reload Integration**
+| Sensor | Use as |
+|---|---|
+| `sensor.solutronic_samlet_ac_effekt` (PAC_TOTAL) | Real-time solar power |
 
 ---
 
-### Docker Network Mode Considerations
+## 🐞 Troubleshooting
 
-For automatic IP re-discovery (auto-reconnect), the integration requires ARP visibility.
+If sensors do not update:
+
+1. Verify the inverter web page works in your browser
+2. Ensure no firewall is blocking LAN access
+3. Restart the integration:
+   → **Developer Tools → Restart / Reload Integration**
+
+---
+
+## 🌐 Docker Network Mode Considerations
+
+Automatic IP re-discovery (auto-reconnect) requires ARP visibility.
 
 | Network Mode | Auto-Reconnect | Notes |
 |---|---|---|
@@ -104,11 +115,11 @@ For automatic IP re-discovery (auto-reconnect), the integration requires ARP vis
 | Docker (host network) | ✅ Works |
 | Docker (bridge network) | ⚠️ Disabled — MAC cannot be resolved |
 
-If running in Docker bridge mode, the integration will continue to function,
-but the inverter IP must be manually updated if it changes (e.g., DHCP).
+If running in Docker bridge mode, the integration will still work,  
+but **you must manually update the inverter IP** if it changes (e.g., DHCP renew).
 
 ---
 
 ## ❤️ Credits
 
-Udviklet til det åbne Home Assistant community.
+Developed for the Home Assistant community.
