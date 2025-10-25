@@ -3,7 +3,7 @@
   "name": "Solutronic Integration",
   "version": "1.0.0",
   "documentation": "https://github.com/Ralleberg/solutronic_inverter",
-  "requirements": ["beautifulsoup4", "requests"],
+  "requirements": ["beautifulsoup4"],
   "codeowners": ["@Ralleberg"],
   "config_flow": true,
   "iot_class": "local_polling",
