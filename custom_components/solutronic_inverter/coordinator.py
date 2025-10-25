@@ -22,25 +22,11 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
         self.ip_address = ip_address
         self._last_data = None  # Store last known valid data for fallback
 
-        # Dynamic device identity fields (set after first update)
-        self.manufacturer = "Solutronic"
-        self.model = "Inverter"
-
     async def _async_update_data(self):
         """Fetch data and return fallback data if device is temporarily unreachable."""
         try:
             # Request data from the inverter
             data = await async_get_sensor_data(self.ip_address)
-
-            # Store dynamic manufacturer/model if available
-            # These keys are injected by solutronic_api.py
-            self.manufacturer = data.get("_manufacturer", self.manufacturer)
-            self.model = data.get("_model", self.model)
-            # Get firmware, build, and serial number with fallbacks
-            self.firmware = data.get("_firmware", getattr(self, "firmware", "Unknown"))
-            self.build = data.get("_build", getattr(self, "build", "Unknown"))
-            self.serial = data.get("SN", getattr(self, "serial", "Unknown"))
-
 
             # Calculate total AC power (PAC_TOTAL) if all phases are present
             if all(k in data for k in ("PACL1", "PACL2", "PACL3")):
