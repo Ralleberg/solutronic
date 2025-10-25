@@ -93,24 +93,6 @@ Hvis sensorer ikke opdaterer:
 
 ---
 
-## Network Requirements
-
-This integration requires that Home Assistant can resolve the inverter's MAC address
-using ARP in order to provide automatic IP re-discovery (DHCP auto-reconnect).
-
-Supported network modes:
-- ✅ Home Assistant OS
-- ✅ Home Assistant Supervised
-- ✅ Docker (host network mode)
-
-Not supported:
-- ❌ Docker in bridge mode (the container cannot see ARP neighbors)
-
-If you are running Home Assistant in a Docker bridge network configuration,
-the integration will still work, but *automatic IP recovery will be disabled*.
-
----
-
 ### Docker Network Mode Considerations
 
 For automatic IP re-discovery (auto-reconnect), the integration requires ARP visibility.
