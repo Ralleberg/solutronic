@@ -13,19 +13,28 @@ from .const import DOMAIN
 # KEY: (Friendly name, Unit, Device Class, State Class, Icon)
 SENSORS = {
     "PAC": ("AC Effekt", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:solar-power"),
+
     "PACL1": ("L1 Effekt", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:solar-panel"),
     "PACL2": ("L2 Effekt", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:solar-panel"),
     "PACL3": ("L3 Effekt", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:solar-panel"),
-    "PAC_TOTAL": ("Samlet Effekt", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:transmission-tower"),
+
     "UDC1": ("DC Spænding 1", "V", SensorDeviceClass.VOLTAGE, SensorStateClass.MEASUREMENT, "mdi:flash-triangle"),
     "UDC2": ("DC Spænding 2", "V", SensorDeviceClass.VOLTAGE, SensorStateClass.MEASUREMENT, "mdi:flash-triangle"),
     "UDC3": ("DC Spænding 3", "V", SensorDeviceClass.VOLTAGE, SensorStateClass.MEASUREMENT, "mdi:flash-triangle"),
+
     "IDC1": ("DC Strøm 1", "A", SensorDeviceClass.CURRENT, SensorStateClass.MEASUREMENT, "mdi:current-dc"),
     "IDC2": ("DC Strøm 2", "A", SensorDeviceClass.CURRENT, SensorStateClass.MEASUREMENT, "mdi:current-dc"),
     "IDC3": ("DC Strøm 3", "A", SensorDeviceClass.CURRENT, SensorStateClass.MEASUREMENT, "mdi:current-dc"),
+
+    # --- ENERGY (for Energy Dashboard) ---
     "ET": ("Dagens Produktion", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, "mdi:solar-power"),
     "EG": ("Total Produktion", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, "mdi:solar-power"),
-    "ETA": ("Effektivitet", "%", SensorDeviceClass.POWER_FACTOR, SensorStateClass.MEASUREMENT, "mdi:percent"),
+
+    "MAXP": ("Maks. Effekt i dag", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:trending-up"),
+    "ETA": ("Effektivitet", "%", None, SensorStateClass.MEASUREMENT, "mdi:percent"),
+    "UACL1": ("Netspænding L1", "V", SensorDeviceClass.VOLTAGE, SensorStateClass.MEASUREMENT, "mdi:flash"),
+    "UACL2": ("Netspænding L2", "V", SensorDeviceClass.VOLTAGE, SensorStateClass.MEASUREMENT, "mdi:flash"),
+    "UACL3": ("Netspænding L3", "V", SensorDeviceClass.VOLTAGE, SensorStateClass.MEASUREMENT, "mdi:flash"),
 }
 
 
@@ -33,12 +42,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Set up sensors when config entry is added."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    # Calculate total AC power (will be added to sensor list if available)
+    # Calculate total AC power if per-phase data is available
     data = coordinator.data
     if all(k in data for k in ("PACL1", "PACL2", "PACL3")):
         data["PAC_TOTAL"] = data["PACL1"] + data["PACL2"] + data["PACL3"]
 
-    # Create a sensor entity for each supported key that is present in fetched data
     entities = [
         SolutronicSensor(coordinator, key, *values)
         for key, values in SENSORS.items()
@@ -68,10 +76,16 @@ class SolutronicSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        """Group all sensors under a single device in Home Assistant UI."""
+        """
+        Return dynamic device info using metadata parsed in the data coordinator.
+
+        This groups all sensors under a single device and allows Home Assistant
+        to display model, manufacturer, and firmware in Device Info.
+        """
         return {
             "identifiers": {(DOMAIN, self.coordinator.ip_address)},
             "name": "Solutronic Inverter",
-            "manufacturer": "Solutronic AG",
-            "model": "SolPlus",
+            "manufacturer": self.coordinator.device_manufacturer,
+            "model": self.coordinator.device_model,
+            "sw_version": self.coordinator.device_firmware,
         }

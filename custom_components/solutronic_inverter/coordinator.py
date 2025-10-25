@@ -2,7 +2,7 @@ import logging
 from datetime import timedelta
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from .solutronic_api import async_get_sensor_data
+from .solutronic_api import async_get_sensor_data, async_get_raw_html
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,11 +22,40 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
         self.ip_address = ip_address
         self._last_data = None  # Store last known valid data for fallback
 
+        # Default device metadata (will be replaced automatically after first fetch)
+        self.device_manufacturer = "Solutronic"
+        self.device_model = "Unknown model"
+        self.device_firmware = "Unknown"
+
     async def _async_update_data(self):
         """Fetch data and return fallback data if device is temporarily unreachable."""
         try:
-            # Request data from the inverter
+            # Request data from the inverter (parsed sensor values)
             data = await async_get_sensor_data(self.ip_address)
+
+            # --- Parse device metadata from raw HTML ---
+            # We only fetch raw HTML occasionally because it is lightweight.
+            try:
+                html = await async_get_raw_html(self.ip_address)
+
+                # Extract manufacturer and model from the <h1> tag
+                # Example: <h1>SOLPLUS 100<br>Solutronic AG</h1>
+                if "<h1>" in html:
+                    header = html.split("<h1>")[1].split("</h1>")[0]
+                    parts = [line.strip() for line in header.replace("<br>", "\n").split("\n") if line.strip()]
+                    if len(parts) >= 2:
+                        self.device_model = parts[0]
+                        self.device_manufacturer = parts[1]
+
+                # Extract firmware version
+                # Example: "FW-Release: 1.42"
+                if "FW-Release" in html:
+                    fw_line = html.split("FW-Release:")[1].split("<")[0].strip()
+                    self.device_firmware = fw_line
+
+            except Exception:
+                # Never block telemetry if metadata parsing fails
+                pass
 
             # Calculate total AC power (PAC_TOTAL) if all phases are present
             if all(k in data for k in ("PACL1", "PACL2", "PACL3")):
