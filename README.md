@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="custom_components/solutronic/logo.png" width="200" alt="Solutronic Logo">
+  <img src="custom_components/solutronic/logo2.png" width="256" alt="Solutronic Logo">
 </p>
 
 # Solutronic Solar Inverter Integration for Home Assistant
