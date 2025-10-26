@@ -5,7 +5,6 @@ from homeassistant.core import callback
 
 from .const import DOMAIN, CONF_IP_ADDRESS, DEFAULT_SCAN_INTERVAL
 from .coordinator import SolutronicDataUpdateCoordinator
-from .discovery import discover_solutronic
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,51 +19,32 @@ def _clean_ip(value: str) -> str:
 
 
 class SolutronicInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle the configuration flow for Solutronic Inverter."""
+    """Simple configuration flow: manual IP entry only."""
 
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
-        """First step: try auto-discovery. If none found, fall back to manual."""
         errors = {}
 
-        # Attempt auto-discovery immediately
-        try:
-            ips = await discover_solutronic()
-        except Exception as e:
-            _LOGGER.error("Discovery error: %s", e)
-            ips = []
-
-        if ips:
-            ip = ips[0]
-            _LOGGER.info("Solutronic inverter discovered at %s", ip)
-
-            coordinator = SolutronicDataUpdateCoordinator(self.hass, ip, DEFAULT_SCAN_INTERVAL)
-
-            try:
-                await coordinator.async_validate_connection()
-                return self.async_create_entry(
-                    title=f"Solutronic @ {ip}",
-                    data={CONF_IP_ADDRESS: ip},
-                )
-            except Exception:
-                _LOGGER.warning("Auto-discovered device did not validate. Falling back to manual entry.")
-
-        # Manual fallback
+        # If user submitted form
         if user_input and CONF_IP_ADDRESS in user_input:
             ip = _clean_ip(user_input[CONF_IP_ADDRESS])
             coordinator = SolutronicDataUpdateCoordinator(self.hass, ip, DEFAULT_SCAN_INTERVAL)
 
             try:
-                await coordinator.async_validate_connection()
+                await coordinator.async_validate_connection()  # Verify inverter connection
+            except Exception:
+                errors["base"] = "cannot_connect"
+            else:
                 return self.async_create_entry(
                     title=f"Solutronic @ {ip}",
                     data={CONF_IP_ADDRESS: ip},
                 )
-            except Exception:
-                errors["base"] = "cannot_connect"
 
-        schema = vol.Schema({vol.Required(CONF_IP_ADDRESS): str})
+        # Show input form
+        schema = vol.Schema({
+            vol.Required(CONF_IP_ADDRESS): str,
+        })
 
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
@@ -75,13 +55,13 @@ class SolutronicInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class SolutronicInverterOptionsFlow(config_entries.OptionsFlow):
-    """Handle integration options (e.g., scan interval)."""
+    """Allows changing scan interval in options."""
 
     def __init__(self, config_entry):
         self.config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
-        if user_input:
+        if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
         schema = vol.Schema({
