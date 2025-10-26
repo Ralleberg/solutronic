@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="custom_components/solutronic_inverter/logo.png" width="200" alt="Solutronic Logo">
+  <img src="custom_components/solutronic/logo.png" width="200" alt="Solutronic Logo">
 </p>
 
 # Solutronic Solar Inverter Integration for Home Assistant
@@ -44,7 +44,7 @@ If you have another model, please share an `index.html` / `stat.xml` sample for 
 
 1. Open **HACS → Integrations**
 2. Click **⋮** → **Custom repositories**
-3. Add: https://github.com/Ralleberg/solutronic_inverter (Select *Integration*)
+3. Add: https://github.com/Ralleberg/solutronic (Select *Integration*)
 4. Search for **Solutronic Inverter** and install
 5. Restart Home Assistant
 6. Add the integration via:  
@@ -54,8 +54,8 @@ If you have another model, please share an `index.html` / `stat.xml` sample for 
 
 Copy the folder:
 
-**custom_components/solutronic_inverter**
-into: **/config/custom_components/solutronic_inverter**
+**custom_components/solutronic**
+into: **/config/custom_components/solutronic**
 
 
 Restart Home Assistant.

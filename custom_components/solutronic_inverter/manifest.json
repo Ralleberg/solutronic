@@ -1,8 +1,8 @@
 {
-  "domain": "solutronic_inverter",
+  "domain": "solutronic",
   "name": "Solutronic Integration",
   "version": "1.0.0",
-  "documentation": "https://github.com/Ralleberg/solutronic_inverter",
+  "documentation": "https://github.com/Ralleberg/solutronic",
   "requirements": ["beautifulsoup4", "requests"],
   "codeowners": ["@Ralleberg"],
   "config_flow": true,
