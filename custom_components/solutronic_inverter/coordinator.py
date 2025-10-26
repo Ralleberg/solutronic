@@ -37,11 +37,16 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
             # Request data from the inverter (parsed sensor values)
             data = await async_get_sensor_data(self.ip_address)
 
-            # --- Extract serial number (SN) if available ---
+            # --- Extract serial number (SN) and ensure no decimal formatting ---
             sn = data.get("SN")
-            if isinstance(sn, (int, float, str)):
-                # Store as string in coordinator
-                self.device_serial = str(sn).strip()
+
+            if sn is not None:
+                try:
+                    # Convert to clean integer string if value was a float like "2091.0"
+                    self.device_serial = str(int(float(sn)))
+                except Exception:
+                    # Fallback: just convert to string
+                    self.device_serial = str(sn).strip()
             else:
                 self.device_serial = None
 
