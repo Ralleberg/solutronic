@@ -25,62 +25,44 @@ class SolutronicInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
-        """Start setup: begin auto-discovery via progress screen."""
-        return self.async_show_progress(
-            step_id="scan",
-            progress_action="scan_network"
-        )
+        """Start setup: auto‐discover device, fallback to manual IP if none found."""
+        errors = {}
 
-    async def async_step_scan_network(self, progress_input=None):
-        """Actual network scan runs here."""
+        # Attempt auto‐discovery
         ips = await discover_solutronic()
 
         if ips:
             ip = ips[0]
-            coordinator = SolutronicDataUpdateCoordinator(self.hass, ip, DEFAULT_SCAN_INTERVAL)
+            _LOGGER.info("Solutronic inverter discovered at %s", ip)
 
+            coordinator = SolutronicDataUpdateCoordinator(self.hass, ip, DEFAULT_SCAN_INTERVAL)
             try:
                 await coordinator.async_validate_connection()
-                return self.async_show_progress_done(
-                    next_step_id="finish",
+                return self.async_create_entry(
+                    title=f"Solutronic @ {ip}",
                     data={CONF_IP_ADDRESS: ip},
                 )
             except Exception:
-                pass  # fallback to manual entry
+                _LOGGER.debug("Discovery found device but validation failed, falling back to manual IP.")
 
-        # Nothing found → move to manual step
-        return self.async_show_progress_done(next_step_id="manual")
-
-    async def async_step_manual(self, user_input=None):
-        """Manual IP fallback form."""
-        errors = {}
-
+        # If we reach here → no auto‐detect or found device invalid → manual form
         if user_input and CONF_IP_ADDRESS in user_input:
             ip = _clean_ip(user_input[CONF_IP_ADDRESS])
             coordinator = SolutronicDataUpdateCoordinator(self.hass, ip, DEFAULT_SCAN_INTERVAL)
-
             try:
                 await coordinator.async_validate_connection()
-            except Exception:
-                errors["base"] = "cannot_connect"
-            else:
                 return self.async_create_entry(
                     title=f"Solutronic @ {ip}",
-                    data={CONF_IP_ADDRESS: ip}
+                    data={CONF_IP_ADDRESS: ip},
                 )
+            except Exception:
+                errors["base"] = "cannot_connect"
 
         schema = vol.Schema({
-            vol.Required(CONF_IP_ADDRESS): str,
+            vol.Required(CONF_IP_ADDRESS, default=""): str,
         })
 
-        return self.async_show_form(step_id="manual", data_schema=schema, errors=errors)
-
-    async def async_step_finish(self, user_input):
-        """Finish and create config entry from auto-discovery."""
-        return self.async_create_entry(
-            title=f"Solutronic @ {user_input[CONF_IP_ADDRESS]}",
-            data=user_input
-        )
+        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
     @staticmethod
     @callback
@@ -89,7 +71,7 @@ class SolutronicInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class SolutronicInverterOptionsFlow(config_entries.OptionsFlow):
-    """Handle integration options such as polling interval."""
+    """Handle integration options."""
 
     def __init__(self, config_entry):
         self.config_entry = config_entry
