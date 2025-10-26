@@ -1,7 +1,7 @@
 {
-  "name": "Solutronic Inverter",
+  "name": "Solutronic",
   "content_in_root": false,
-  "domains": ["solutronic_inverter"],
+  "domains": ["solutronic"],
   "country": ["DK"],
   "iot_class": "local_polling",
   "homeassistant": "2024.0.0"
