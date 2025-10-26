@@ -45,7 +45,7 @@ If you have another model, please share an `index.html` / `stat.xml` sample for 
 1. Open **HACS → Integrations**
 2. Click **⋮** → **Custom repositories**
 3. Add: https://github.com/Ralleberg/solutronic (Select *Integration*)
-4. Search for **Solutronic Inverter** and install
+4. Search for **Solutronic** and install
 5. Restart Home Assistant
 6. Add the integration via:  
 **Settings → Devices & Services → Add Integration → "Solutronic Inverter"**
