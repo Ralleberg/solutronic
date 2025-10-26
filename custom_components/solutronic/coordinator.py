@@ -1,7 +1,7 @@
 import logging
 from datetime import timedelta
 
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .solutronic_api import async_get_sensor_data, async_get_raw_html, async_get_mac
 from .discovery import discover_solutronic  # used for auto-reconnect scan
 
@@ -22,6 +22,10 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
 
         self.ip_address = ip_address
         self._last_data = None  # Store last known valid data for fallback
+
+        # Lifetime counter internal state
+        self._lt_prev_et = None
+        self._lt_total = None
 
         # Used to avoid repeating bridge-mode warning log
         self._bridge_warning_logged = False
@@ -86,6 +90,29 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
             else:
                 data.pop("PAC_TOTAL", None)
 
+            # --- Derived lifetime energy counter based on ET (energy today) ---
+            et = data.get("ET")
+            real_total = float(data.get("EG", 0) or 0)
+
+            # Initialize on first run after HA restart
+            if self._lt_prev_et is None:
+                self._lt_prev_et = et
+                self._lt_total = real_total
+
+            if et is not None:
+                # Normal increase (ET increases throughout daytime)
+                if et >= self._lt_prev_et:
+                    self._lt_total += (et - self._lt_prev_et)
+                    self._lt_prev_et = et
+                else:
+                    # ET reset overnight → do not add, just realign baseline
+                    self._lt_prev_et = et
+
+                data["LIFETIME_DERIVED"] = round(self._lt_total, 3)
+            else:
+                # If ET missing, just report stored total
+                data["LIFETIME_DERIVED"] = round(self._lt_total, 3)
+
             # Store latest valid dataset for fallback use
             self._last_data = data
             return data
@@ -117,7 +144,7 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
             last = self._last_data or {}
 
             # Keys that should retain last known values (energy data)
-            retain_keys = ["ET", "EG"]  # Daily + Lifetime energy
+            retain_keys = ["ET", "EG", "LIFETIME_DERIVED"]
 
             # Keys that should be zero when inverter is offline
             zero_keys = [
@@ -135,7 +162,7 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
             for key in zero_keys:
                 fallback[key] = 0
 
-            # Restore ET + EG (energy totals) if known
+            # Restore ET + EG + Derived total if known
             for key in retain_keys:
                 fallback[key] = last.get(key, 0)
 

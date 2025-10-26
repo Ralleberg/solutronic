@@ -12,7 +12,7 @@ from .const import DOMAIN
 # Format:
 # KEY: (Friendly name, Unit, Device Class, State Class, Icon)
 SENSORS = {
-    "PAC": ("AC Effekt", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:solar-power"),
+    #"PAC": ("AC Effekt", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:solar-power"),
     "PAC_TOTAL": ("Samlet AC Effekt", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:solar-power"),
 
     "PACL1": ("L1 Effekt", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:solar-panel"),
@@ -28,8 +28,11 @@ SENSORS = {
     "IDC3": ("DC Strøm 3", "A", SensorDeviceClass.CURRENT, SensorStateClass.MEASUREMENT, "mdi:current-dc"),
 
     # --- ENERGY (for Energy Dashboard) ---
-    "ET": ("Dagens Produktion", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, "mdi:solar-power"),
-    "EG": ("Total Produktion", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, "mdi:solar-power"),
+    "ET": ("Dagens Produktion", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.MEASUREMENT, "mdi:solar-power"),
+    "EG": ("Total Produktion inverter", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.MEASUREMENT, "mdi:solar-power"),
+
+    # Derived lifetime energy (smooth, continuous, no reset spike)
+    "LIFETIME_DERIVED": ("Total Produktion", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, "mdi:solar-power"),
 
     "MAXP": ("Maks. Effekt i dag", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:trending-up"),
     "ETA": ("Effektivitet", "%", None, SensorStateClass.MEASUREMENT, "mdi:percent"),
@@ -43,7 +46,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Set up sensors when config entry is added."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    # Create a sensor entity for each supported key that is present in fetched data
     entities = [
         SolutronicSensor(coordinator, key, *values)
         for key, values in SENSORS.items()
@@ -73,7 +75,6 @@ class SolutronicSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-
         """Return device information for the inverter."""
         return {
             "identifiers": {(DOMAIN, self.coordinator.ip_address)},
@@ -81,6 +82,6 @@ class SolutronicSensor(CoordinatorEntity, SensorEntity):
             "manufacturer": self.coordinator.device_manufacturer,
             "model": self.coordinator.device_model,
             "sw_version": self.coordinator.device_firmware,
-            "hw_version": getattr(self.coordinator, "device_serial", None),  # Serial number if available
-            "configuration_url": f"http://{self.coordinator.ip_address}:8888/solutronic/",
+            "hw_version": getattr(self.coordinator, "device_serial", None),
+            "configuration_url": f"http://{self.coordinator.ip_address}/",
         }
