@@ -4,20 +4,25 @@
     "step": {
       "user": {
         "title": "Solutronic Inverter Setup",
-        "description": "Enter the IP address or scan for the inverter.",
+        "description": "Enter the IP address of your Solutronic inverter.",
         "data": {
-          "ip_address": "IP Address",
-          "scan_network": "Scan local network automatically"
+          "ip_address": "IP Address"
         }
-      },
-      "scan": {
-        "title": "Scanning...",
-        "description": "Scanning your network for a Solutronic inverter..."
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to the inverter.",
-      "no_devices_found": "No Solutronic inverter found on your network."
+      "cannot_connect": "Failed to connect to the inverter."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Solutronic Settings",
+        "description": "Adjust polling interval.",
+        "data": {
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
     }
   }
 }
