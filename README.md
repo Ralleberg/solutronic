@@ -83,7 +83,7 @@ Add the following sensors:
 | Sensor | Select as |
 |---|---|
 | `sensor.solutronic_dagens_produktion` | Solar production (kWh) |
-| `sensor.solutronic_total_produktion` | Lifetime production (kWh) |
+| `sensor.solutronic_total_produktion` | Lifetime production (kWh) - ✅ Best results in energy dashboard |
 
 Optionally add:
 
