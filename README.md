@@ -69,8 +69,7 @@ When adding the integration, enter the IP address of the inverter.
 Examples (all accepted):
 
 - `192.168.1.1`
-- `192.168.1.1:8888`
-- `http://192.168.1.1/solutronic/`
+- `http://192.168.1.1`
 
 The integration **automatically normalizes the URL**.
 
