@@ -73,13 +73,14 @@ class SolutronicSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        """
-        Return dynamic device info using metadata parsed in the data coordinator.
-        """
+
+        """Return device information for the inverter."""
         return {
             "identifiers": {(DOMAIN, self.coordinator.ip_address)},
-            "name": "Solutronic Inverter",
+            "name": f"Solutronic Inverter ({self.coordinator.ip_address})",
             "manufacturer": self.coordinator.device_manufacturer,
             "model": self.coordinator.device_model,
             "sw_version": self.coordinator.device_firmware,
+            "hw_version": getattr(self.coordinator, "device_serial", None),  # Serial number if available
+            "configuration_url": f"http://{self.coordinator.ip_address}:8888/solutronic/",
         }

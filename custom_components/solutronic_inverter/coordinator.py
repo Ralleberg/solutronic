@@ -37,6 +37,17 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
             # Request data from the inverter (parsed sensor values)
             data = await async_get_sensor_data(self.ip_address)
 
+            # --- Extract serial number (SN) if available ---
+            sn = data.get("SN")
+            if isinstance(sn, (int, float, str)):
+                # Store as string in coordinator
+                self.device_serial = str(sn).strip()
+            else:
+                self.device_serial = None
+
+            # --- Normalize stored IP address (ensure it's clean and exact) ---
+            self.device_ip = self.ip_address
+
             # --- Parse device metadata from raw HTML ---
             try:
                 html = await async_get_raw_html(self.ip_address)
