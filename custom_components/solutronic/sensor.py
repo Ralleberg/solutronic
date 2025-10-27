@@ -28,11 +28,12 @@ SENSORS = {
     "IDC3": ("DC Strøm 3", "A", SensorDeviceClass.CURRENT, SensorStateClass.MEASUREMENT, "mdi:current-dc"),
 
     # --- ENERGY (for Energy Dashboard) ---
+    
     "ET": ("Dagens Produktion", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.MEASUREMENT, "mdi:solar-power"),
-    "EG": ("Total Produktion inverter", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.MEASUREMENT, "mdi:solar-power"),
+    "EG": ("Inverter Total produktion", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.MEASUREMENT, "mdi:solar-power"),
 
     # Derived lifetime energy (smooth, continuous, no reset spike)
-    "LIFETIME_DERIVED": ("Total Produktion", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, "mdi:solar-power"),
+    "LIFETIME_DERIVED": ("Total produktion", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, "mdi:solar-power"),
 
     "MAXP": ("Maks. Effekt i dag", "W", SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "mdi:trending-up"),
     "ETA": ("Effektivitet", "%", None, SensorStateClass.MEASUREMENT, "mdi:percent"),

@@ -93,6 +93,7 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
             # --- Derived lifetime energy counter based on ET (energy today) ---
             et = data.get("ET")
             real_total = float(data.get("EG", 0) or 0)
+            pac = data.get("PAC_TOTAL", 0) or 0
 
             # Initialize on first run after HA restart
             if self._lt_prev_et is None:
@@ -100,15 +101,25 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                 self._lt_total = real_total
 
             if et is not None:
-                # Normal increase (ET increases throughout daytime)
-                if et >= self._lt_prev_et:
+                # --- Case 1: ET increased normally (daytime production) ---
+                if et > self._lt_prev_et and pac > 0:
                     self._lt_total += (et - self._lt_prev_et)
                     self._lt_prev_et = et
-                else:
-                    # ET reset overnight → do not add, just realign baseline
+
+                # --- Case 2: ET reset overnight (new day) ---
+                elif et < self._lt_prev_et:
+                    # Reset baseline but DO NOT add difference
                     self._lt_prev_et = et
 
+                # --- Case 3: False morning start (ET rises but PAC == 0) ---
+                elif et > self._lt_prev_et and pac == 0:
+                    # Ignore this fake rise completely
+                    self._lt_prev_et = et  # Update baseline only
+
+                # else: no change (stable or offline)
+
                 data["LIFETIME_DERIVED"] = round(self._lt_total, 3)
+
             else:
                 # If ET missing, just report stored total
                 data["LIFETIME_DERIVED"] = round(self._lt_total, 3)
