@@ -30,7 +30,7 @@ SENSORS = {
     # --- ENERGY (for Energy Dashboard) ---
     
     "ET": ("Dagens Produktion", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.MEASUREMENT, "mdi:solar-power"),
-    "EG": ("Inverter Total produktion", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.MEASUREMENT, "mdi:solar-power"),
+    "EG": ("Inverter Total", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.MEASUREMENT, "mdi:solar-power"),
 
     # Derived lifetime energy (smooth, continuous, no reset spike)
     "LIFETIME_DERIVED": ("Total produktion", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, "mdi:solar-power"),
