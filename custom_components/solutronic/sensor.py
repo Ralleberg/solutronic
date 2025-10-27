@@ -79,7 +79,7 @@ class SolutronicSensor(CoordinatorEntity, SensorEntity):
         """Return device information for the inverter."""
         return {
             "identifiers": {(DOMAIN, self.coordinator.ip_address)},
-            "name": f"Solutronic ({self.coordinator.ip_address})",
+            "name": f"Solutronic Inverter ({self.coordinator.ip_address})",
             "manufacturer": self.coordinator.device_manufacturer,
             "model": self.coordinator.device_model,
             "sw_version": self.coordinator.device_firmware,

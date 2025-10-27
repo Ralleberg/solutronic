@@ -37,7 +37,7 @@ class SolutronicInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
             else:
                 return self.async_create_entry(
-                    title="Solutronic",
+                    title=f"Solutronic @ {ip}",
                     data={CONF_IP_ADDRESS: ip},
                 )
 

@@ -16,7 +16,7 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             _LOGGER,
-            name="Solutronicr",
+            name="Solutronic Inverter",
             update_interval=timedelta(seconds=scan_interval),
         )
 

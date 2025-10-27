@@ -48,7 +48,7 @@ If you have another model, please share an `index.html` / `stat.xml` sample for 
 4. Search for **Solutronic** and install
 5. Restart Home Assistant
 6. Add the integration via:  
-**Settings → Devices & Services → Add Integration → "Solutronic"**
+**Settings → Devices & Services → Add Integration → "Solutronic Inverter"**
 
 ### Manual Installation
 
