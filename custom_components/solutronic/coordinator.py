@@ -31,7 +31,7 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
 
         # Load stored metadata if available
         entry = next(
-            (entry for entry in hass.config_entries.async_entries() if entry.data.get("ip") == ip_address),
+            (entry for entry in self.hass.config_entries.async_entries() if entry.data.get("ip_address") == self.ip_address),
             None
         )
 
@@ -58,11 +58,11 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                 except Exception:
                     new_serial = str(sn).strip()
             else:
-                new_serial = self.device_serial  # keep stored value
+                new_serial = self.device_serial
 
             self.device_serial = new_serial
 
-            # --- Parse metadata from HTML if reachable ---
+            # --- Retrieve metadata if reachable ---
             try:
                 html = await async_get_raw_html(self.ip_address)
 
@@ -77,13 +77,14 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                     fw_line = html.split("FW-Release:")[1].split("<")[0].strip()
                     self.device_firmware = fw_line
 
-                # ✅ Persist metadata to config entry
+                # ✅ Persist metadata correctly
                 entry = next(
-                    (entry for entry in self.hass.config_entries.async_entries() if entry.data.get("ip") == self.ip_address),
+                    (entry for entry in self.hass.config_entries.async_entries() if entry.data.get("ip_address") == self.ip_address),
                     None
                 )
                 if entry:
                     new_data = dict(entry.data)
+                    new_data["ip_address"] = self.ip_address
                     new_data["manufacturer"] = self.device_manufacturer
                     new_data["model"] = self.device_model
                     new_data["firmware"] = self.device_firmware
@@ -97,7 +98,7 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
             pac_values = [v for k, v in data.items() if k.startswith("PACL") and isinstance(v, (int, float))]
             data["PAC_TOTAL"] = sum(pac_values) if pac_values else 0
 
-            # --- Lifetime Derived Energy (stable across reboots and mornings) ---
+            # --- Lifetime Derived Energy ---
             et = data.get("ET")
             real_total = float(data.get("EG", 0) or 0)
             pac = data.get("PAC_TOTAL", 0) or 0
