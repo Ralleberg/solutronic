@@ -76,23 +76,13 @@ class SolutronicSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        """Return device information for the inverter.
-        Uses stored metadata if inverter is offline."""
-        
-        # Get config entry to read stored values
-        entry = self.coordinator.hass.config_entries.async_get_entry(self.coordinator.entry_id)
-
-        manufacturer = getattr(self.coordinator, "device_manufacturer", None) or entry.data.get("manufacturer", "Solutronic")
-        model = getattr(self.coordinator, "device_model", None) or entry.data.get("model", "Unknown model")
-        firmware = getattr(self.coordinator, "device_firmware", None) or entry.data.get("firmware", None)
-        serial = getattr(self.coordinator, "device_serial", None) or entry.data.get("serial", None)
-
+        """Return device information for the inverter."""
         return {
             "identifiers": {(DOMAIN, self.coordinator.ip_address)},
-            "name": "Solutronic",
-            "manufacturer": manufacturer,
-            "model": model,
-            "sw_version": firmware,
-            "hw_version": serial,
+            "name": f"Solutronic ({self.coordinator.ip_address})",
+            "manufacturer": self.coordinator.device_manufacturer,
+            "model": self.coordinator.device_model,
+            "sw_version": self.coordinator.device_firmware,
+            "hw_version": getattr(self.coordinator, "device_serial", None),
             "configuration_url": f"http://{self.coordinator.ip_address}/",
         }
