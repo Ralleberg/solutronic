@@ -79,14 +79,11 @@ If you own another model, please share an `index.html` or `stat.xml` sample to i
 
 ### Manual Installation
 
-Copy the folder:
-
-**custom_components/solutronic**
-into your Home Assistant config directory: 
-
-**/config/custom_components/solutronic**
-
-Restart Home Assistant.
+- Copy the folder:
+- **custom_components/solutronic**
+- into your Home Assistant config directory: 
+- **/config/custom_components/solutronic**
+- Restart Home Assistant.
 
 ---
 
