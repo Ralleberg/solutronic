@@ -104,27 +104,31 @@ class SolutronicSensor(CoordinatorEntity, SensorEntity):
         }
 
 
-class SolutronicEnergyIntegrationSensor(IntegrationSensor):
-    """Energy integration sensor that belongs to the Solutronic device."""
+class SolutronicIntegrationSensor(IntegrationSensor):
+    """Energy integration sensor that integrates PAC_TOTAL over time."""
 
-    def __init__(self, coordinator, source_entity):
+    def __init__(self, hass, coordinator, source_entity):
+        """Initialize the integrated energy sensor."""
         super().__init__(
             source_entity=source_entity.entity_id,
             name="Solutronic total produktion",
-            round_digits=3,
+            unique_id=f"{coordinator.ip_address}_integrated_energy",
             unit_prefix="k",
-            method="trapezoidal",
-            unique_id=f"{source_entity.unique_id}_energy",
+            round_result=3,
             unit_time="h",
+            integration_method="trapezoidal",
         )
+
+        self.hass = hass
         self.coordinator = coordinator
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+        self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
         self._attr_icon = "mdi:solar-power"
 
     @property
     def device_info(self):
-        """Return same device info as the inverter sensors."""
+        """Ensure it's grouped under the same device."""
         return {
             "identifiers": {(DOMAIN, self.coordinator.ip_address)},
             "name": "Solutronic",
