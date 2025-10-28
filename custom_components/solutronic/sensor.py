@@ -2,8 +2,8 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorDeviceClass,
     SensorStateClass,
-    IntegrationSensor,
 )
+from homeassistant.components.integration.sensor import IntegrationSensor
 from homeassistant.const import UnitOfEnergy
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -53,7 +53,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         if key in coordinator.data
     ]
 
-    # Tilføj også en integreret energisensor baseret på PAC_TOTAL (integration)
+    # Tilføj også en integreret energisensor baseret på PAC_TOTAL
     pac_entity = next((e for e in entities if e._key == "PAC_TOTAL"), None)
     if pac_entity:
         integration_sensor = SolutronicIntegrationSensor(
