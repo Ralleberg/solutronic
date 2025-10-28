@@ -62,7 +62,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
     # --- Automatically create integration-based energy sensor ---
     for entity in entities:
         if getattr(entity, "_key", None) == "PAC_TOTAL":
-            integration_sensor = SolutronicEnergyIntegrationSensor(
+            integration_sensor = SolutronicIntegrationSensor(
+                hass=hass,
                 coordinator=coordinator,
                 source_entity=entity,
             )
