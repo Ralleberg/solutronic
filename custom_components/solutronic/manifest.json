@@ -6,6 +6,5 @@
   "requirements": ["beautifulsoup4", "requests"],
   "codeowners": ["@Ralleberg"],
   "config_flow": true,
-  "iot_class": "local_polling",
-  "brand": "solutronic"
+  "iot_class": "local_polling"
 }
