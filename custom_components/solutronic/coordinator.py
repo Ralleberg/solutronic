@@ -11,16 +11,18 @@ _LOGGER = logging.getLogger(__name__)
 class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
     """Coordinator that polls the Solutronic inverter and provides stable data."""
 
-    def __init__(self, hass, ip_address, scan_interval):
+    def __init__(self, hass, ip_address, scan_interval, entry=None):
         # Initialize coordinator with dynamic polling interval
         super().__init__(
             hass,
             _LOGGER,
-            name="Solutronic Inverter",
+            name="Solutronic",
             update_interval=timedelta(seconds=scan_interval),
         )
 
         self.ip_address = ip_address
+        self.hass = hass
+        self.entry = entry
         self._last_data = None  # Store last known valid data for fallback
 
         # Lifetime counter internal state
@@ -30,10 +32,17 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
         # Used to avoid repeating bridge-mode warning log
         self._bridge_warning_logged = False
 
-        # Default device metadata (will be replaced automatically after first fetch)
-        self.device_manufacturer = "Solutronic"
-        self.device_model = "Unknown model"
-        self.device_firmware = "Unknown"
+        # Device metadata (persisted in config entry when available)
+        if entry is not None:
+            self.device_manufacturer = entry.data.get("manufacturer", "Solutronic")
+            self.device_model = entry.data.get("model", "Unknown model")
+            self.device_firmware = entry.data.get("firmware", "Unknown")
+            self.device_serial = entry.data.get("serial", None)
+        else:
+            self.device_manufacturer = "Solutronic"
+            self.device_model = "Unknown model"
+            self.device_firmware = "Unknown"
+            self.device_serial = None
 
     async def _async_update_data(self):
         """Fetch data and return fallback data if device is temporarily unreachable."""
@@ -43,7 +52,6 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
 
             # --- Extract serial number (SN) and ensure no decimal formatting ---
             sn = data.get("SN")
-
             if sn is not None:
                 try:
                     # Convert to clean integer string if value was a float like "2091.0"
@@ -51,8 +59,7 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                 except Exception:
                     # Fallback: just convert to string
                     self.device_serial = str(sn).strip()
-            else:
-                self.device_serial = None
+            # If SN is missing, keep the previously stored serial (do not overwrite with None)
 
             # --- Normalize stored IP address (ensure it's clean and exact) ---
             self.device_ip = self.ip_address
@@ -61,18 +68,39 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
             try:
                 html = await async_get_raw_html(self.ip_address)
 
+                manufacturer_new = self.device_manufacturer
+                model_new = self.device_model
+                firmware_new = self.device_firmware
+
                 # Extract manufacturer and model from <h1> header
                 if "<h1>" in html:
                     header = html.split("<h1>")[1].split("</h1>")[0]
                     parts = [line.strip() for line in header.replace("<br>", "\n").split("\n") if line.strip()]
                     if len(parts) >= 2:
-                        self.device_model = parts[0]
-                        self.device_manufacturer = parts[1]
+                        model_new = parts[0]
+                        manufacturer_new = parts[1]
 
                 # Extract firmware version
                 if "FW-Release" in html:
                     fw_line = html.split("FW-Release:")[1].split("<")[0].strip()
-                    self.device_firmware = fw_line
+                    if fw_line:
+                        firmware_new = fw_line
+
+                # Apply parsed metadata
+                self.device_manufacturer = manufacturer_new
+                self.device_model = model_new
+                self.device_firmware = firmware_new
+
+                # Persist metadata so it survives inverter offline periods and HA restarts
+                if self.entry is not None:
+                    new_data = dict(self.entry.data)
+                    new_data["manufacturer"] = self.device_manufacturer
+                    new_data["model"] = self.device_model
+                    new_data["firmware"] = self.device_firmware
+                    new_data["serial"] = getattr(self, "device_serial", None)
+
+                    if new_data != self.entry.data:
+                        self.hass.config_entries.async_update_entry(self.entry, data=new_data)
 
             except Exception:
                 # Metadata parsing errors should never stop telemetry updates

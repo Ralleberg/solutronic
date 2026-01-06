@@ -26,7 +26,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     scan_interval = entry.options.get("scan_interval", DEFAULT_SCAN_INTERVAL)
 
     # Create the data coordinator with dynamic interval
-    coordinator = SolutronicDataUpdateCoordinator(hass, ip, scan_interval)
+    coordinator = SolutronicDataUpdateCoordinator(hass, ip, scan_interval, entry)
     await coordinator.async_config_entry_first_refresh()
 
     # Store coordinator instance
