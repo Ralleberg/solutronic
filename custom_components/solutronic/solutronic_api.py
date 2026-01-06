@@ -3,6 +3,7 @@
 import aiohttp
 from bs4 import BeautifulSoup
 import asyncio
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 # We will probe both typical ports and both paths
 PORTS_TO_TRY = (8888, 80)
@@ -33,47 +34,111 @@ def _build_url(ip: str, port: int, path: str) -> str:
     return base
 
 
-async def _probe_working_base(ip: str) -> str:
+def _cache_key(ip: str) -> str:
+    """Return a stable cache key (host) regardless of how the user typed the IP."""
+    ip = ip.strip()
+    if ip.startswith("http://") or ip.startswith("https://"):
+        host = ip.split("//", 1)[1].split("/", 1)[0]
+    else:
+        host = ip.split("/", 1)[0]
+    host = host.split(":", 1)[0]
+    return host
+
+
+async def _probe_working_base(ip: str, hass=None, session=None) -> str:
     """Try all port/path combos and return the first that responds with HTTP 200."""
-    if ip in _BASE_URL_CACHE:
-        return _BASE_URL_CACHE[ip]
+    key = _cache_key(ip)
+    if key in _BASE_URL_CACHE:
+        return _BASE_URL_CACHE[key]
 
     timeout = aiohttp.ClientTimeout(total=8)
-    async with aiohttp.ClientSession(timeout=timeout, headers=_DEFAULT_HEADERS) as session:
+
+    owns_session = False
+    if session is None:
+        if hass is not None:
+            session = async_get_clientsession(hass)
+        else:
+            session = aiohttp.ClientSession(timeout=timeout, headers=_DEFAULT_HEADERS)
+            owns_session = True
+
+    try:
         for port in PORTS_TO_TRY:
             for path in PATHS_TO_TRY:
                 url = _build_url(ip, port, path)
                 try:
-                    async with session.get(url) as resp:
+                    async with session.get(url, timeout=timeout) as resp:
                         # Many Solutronic pages return 200 with an HTML table right on root
                         if resp.status == 200:
-                            _BASE_URL_CACHE[ip] = url
+                            _BASE_URL_CACHE[key] = url
                             return url
                 except Exception:
-                    # Try next combination
                     continue
+    finally:
+        if owns_session:
+            await session.close()
 
     raise ConnectionError(f"No responding Solutronic endpoint found on {ip} "
                           f"for ports {PORTS_TO_TRY} and paths {PATHS_TO_TRY}.")
 
 
-async def async_get_raw_html(ip_address: str) -> str:
+async def async_get_raw_html(ip_address: str, hass=None) -> str:
     """Return raw HTML from whichever endpoint is working."""
-    base = await _probe_working_base(ip_address)
     timeout = aiohttp.ClientTimeout(total=10)
+
+    if hass is not None:
+        session = async_get_clientsession(hass)
+        try:
+            base = await _probe_working_base(ip_address, hass=hass, session=session)
+            try:
+                async with session.get(base, timeout=timeout) as response:
+                    return await response.text()
+            except Exception:
+                # Cached base might be stale; clear and reprobe once
+                _BASE_URL_CACHE.pop(_cache_key(ip_address), None)
+                base = await _probe_working_base(ip_address, hass=hass, session=session)
+                async with session.get(base, timeout=timeout) as response:
+                    return await response.text()
+        except Exception:
+            raise
+
     async with aiohttp.ClientSession(timeout=timeout, headers=_DEFAULT_HEADERS) as session:
-        async with session.get(base) as response:
-            return await response.text()
+        base = await _probe_working_base(ip_address, session=session)
+        try:
+            async with session.get(base) as response:
+                return await response.text()
+        except Exception:
+            _BASE_URL_CACHE.pop(_cache_key(ip_address), None)
+            base = await _probe_working_base(ip_address, session=session)
+            async with session.get(base) as response:
+                return await response.text()
 
 
-async def async_get_sensor_data(ip_address: str):
+async def async_get_sensor_data(ip_address: str, hass=None):
     """Fetch and parse inverter telemetry from the discovered working endpoint."""
-    base = await _probe_working_base(ip_address)
-
     timeout = aiohttp.ClientTimeout(total=10)
-    async with aiohttp.ClientSession(timeout=timeout, headers=_DEFAULT_HEADERS) as session:
-        async with session.get(base) as response:
-            html_data = await response.text()
+
+    if hass is not None:
+        session = async_get_clientsession(hass)
+        base = await _probe_working_base(ip_address, hass=hass, session=session)
+        try:
+            async with session.get(base, timeout=timeout) as response:
+                html_data = await response.text()
+        except Exception:
+            _BASE_URL_CACHE.pop(_cache_key(ip_address), None)
+            base = await _probe_working_base(ip_address, hass=hass, session=session)
+            async with session.get(base, timeout=timeout) as response:
+                html_data = await response.text()
+    else:
+        async with aiohttp.ClientSession(timeout=timeout, headers=_DEFAULT_HEADERS) as session:
+            base = await _probe_working_base(ip_address, session=session)
+            try:
+                async with session.get(base) as response:
+                    html_data = await response.text()
+            except Exception:
+                _BASE_URL_CACHE.pop(_cache_key(ip_address), None)
+                base = await _probe_working_base(ip_address, session=session)
+                async with session.get(base) as response:
+                    html_data = await response.text()
 
     soup = BeautifulSoup(html_data, "html.parser")
     table = soup.find("table")

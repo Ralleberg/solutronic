@@ -48,7 +48,7 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
         """Fetch data and return fallback data if device is temporarily unreachable."""
         try:
             # Request data from the inverter (parsed sensor values)
-            data = await async_get_sensor_data(self.ip_address)
+            data = await async_get_sensor_data(self.ip_address, self.hass)
 
             # --- Extract serial number (SN) and ensure no decimal formatting ---
             sn = data.get("SN")
@@ -66,7 +66,7 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
 
             # --- Parse device metadata from raw HTML ---
             try:
-                html = await async_get_raw_html(self.ip_address)
+                html = await async_get_raw_html(self.ip_address, self.hass)
 
                 manufacturer_new = self.device_manufacturer
                 model_new = self.device_model
@@ -210,4 +210,4 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def async_validate_connection(self):
         """Used by config flow to verify connectivity before setup."""
-        await async_get_sensor_data(self.ip_address)
+        await async_get_sensor_data(self.ip_address, self.hass)
