@@ -6,6 +6,8 @@
 
 This integration allows Home Assistant to retrieve live data from Solutronic SOLPLUS inverters and expose them as sensors — including **full support for the Home Assistant Energy Dashboard**.
 
+![HACS](https://img.shields.io/badge/HACS-custom-blue)
+
 ---
 
 ## ✨ Features
