@@ -12,13 +12,12 @@ This integration allows Home Assistant to retrieve live data from Solutronic SOL
 
 ## ✨ Features
 
-- Automatic or manual inverter IP discovery
+- Manual inverter IP setup with automatic endpoint detection on common Solutronic ports/paths
 - Live AC output power:
   - `PAC` (instant power)
   - `PAC_TOTAL` (sum of all available phases)
 - Daily (`ET`) and lifetime (`EG`) production sensors  
-- Automatic energy integration (kWh) directly from inverter output  
-  → **no manual helpers required**
+- Energy Dashboard compatible lifetime production sensor
 - DC voltages, DC currents, and AC phase voltages
 - Efficiency metrics and maximum daily power
 - Automatic extraction of:
@@ -29,11 +28,11 @@ This integration allows Home Assistant to retrieve live data from Solutronic SOL
 
 ---
 
-## ⚡ Automatic Energy Calculation
+## ⚡ Energy Dashboard Sensor
 
-This integration automatically creates an **energy counter sensor** based on the inverter’s reported AC output (`PAC_TOTAL`).
+This integration exposes a stable lifetime production sensor based on the inverter telemetry.
 
-### 📈 Automatically Generated Sensor
+### 📈 Recommended Sensor
 
 | Property | Value |
 |-----------|--------|
@@ -41,9 +40,9 @@ This integration automatically creates an **energy counter sensor** based on the
 | **Unit** | kWh |
 | **Device class** | `energy` |
 | **State class** | `total_increasing` |
-| **Integration method** | Trapezoidal (accurate over time) |
+| **Source** | Inverter telemetry with restart-safe fallback |
 
-The energy sensor appears automatically after installation and can be used **directly in Home Assistant’s Energy Dashboard** without creating a manual *Integration Helper*.
+The sensor appears automatically after installation and can be used **directly in Home Assistant’s Energy Dashboard** without creating a manual helper.
 
 ### 🔗 Unified Device
 
@@ -51,7 +50,7 @@ The energy counter is grouped under the same device as all other Solutronic sens
 
 ### 💡 Benefit
 
-The integration performs the energy accumulation internally using Home Assistant’s own integration platform, ensuring accurate daily and lifetime tracking — even across restarts.
+The integration keeps the lifetime sensor stable across temporary inverter outages and Home Assistant restarts.
 
 ---
 
@@ -122,22 +121,6 @@ If sensors do not update:
 2. Ensure no firewall blocks access on your LAN  
 3. Restart the integration via:  
    **Developer Tools → Restart / Reload Integration**
-
----
-
-## 🌐 Docker Network Mode Notes
-
-Auto-reconnect requires ARP visibility.
-
-| Network Mode | Auto-Reconnect | Notes |
-|---|---|---|
-| Home Assistant OS | ✅ Works |
-| Supervised | ✅ Works |
-| Docker (host network) | ✅ Works |
-| Docker (bridge network) | ⚠️ Disabled — MAC address not visible |
-
-When running in Docker bridge mode, the integration will still work,  
-but you must manually update the inverter IP if it changes (e.g., via DHCP).
 
 ---
 

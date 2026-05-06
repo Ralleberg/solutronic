@@ -5,17 +5,14 @@ from homeassistant.core import callback
 
 from .const import DOMAIN, CONF_IP_ADDRESS, DEFAULT_SCAN_INTERVAL
 from .coordinator import SolutronicDataUpdateCoordinator
+from .solutronic_api import normalize_ip_address
 
 _LOGGER = logging.getLogger(__name__)
 
 
 def _clean_ip(value: str) -> str:
-    """Normalize user input so only a raw IP remains."""
-    value = value.replace("http://", "").replace("https://", "")
-    value = value.replace("/solutronic/", "").replace("/solutronic", "")
-    if ":" in value:
-        value = value.split(":")[0]
-    return value.strip()
+    """Normalize and validate user input so only a raw IPv4 address remains."""
+    return normalize_ip_address(value)
 
 
 class SolutronicInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -28,18 +25,26 @@ class SolutronicInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # If user submitted form
         if user_input and CONF_IP_ADDRESS in user_input:
-            ip = _clean_ip(user_input[CONF_IP_ADDRESS])
-            coordinator = SolutronicDataUpdateCoordinator(self.hass, ip, DEFAULT_SCAN_INTERVAL)
-
             try:
-                await coordinator.async_validate_connection()  # Verify inverter connection
-            except Exception:
-                errors["base"] = "cannot_connect"
+                ip = _clean_ip(user_input[CONF_IP_ADDRESS])
+            except ValueError:
+                errors[CONF_IP_ADDRESS] = "invalid_host"
             else:
-                return self.async_create_entry(
-                    title="Solutronic",
-                    data={CONF_IP_ADDRESS: ip},
-                )
+                await self.async_set_unique_id(ip)
+                self._abort_if_unique_id_configured()
+
+                coordinator = SolutronicDataUpdateCoordinator(self.hass, ip, DEFAULT_SCAN_INTERVAL)
+
+                try:
+                    await coordinator.async_validate_connection()
+                except Exception:
+                    _LOGGER.debug("Failed to validate Solutronic inverter at %s", ip, exc_info=True)
+                    errors["base"] = "cannot_connect"
+                else:
+                    return self.async_create_entry(
+                        title=f"Solutronic {ip}",
+                        data={CONF_IP_ADDRESS: ip},
+                    )
 
         # Show input form
         schema = vol.Schema({
