@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import timedelta
 
 from bs4 import BeautifulSoup
@@ -33,6 +34,7 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
         self.hass = hass
         self.entry = entry
         self._last_data = None  # Store last known valid data for fallback
+        self.supported_keys = set()
 
         # Lifetime counter internal state
         self._lt_prev_et = None
@@ -81,6 +83,8 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                 model_new = self.device_model
                 firmware_new = self.device_firmware
 
+                text = soup.get_text("\n", strip=True)
+
                 # Extract manufacturer and model from <h1> header
                 header = soup.find("h1")
                 if header is not None:
@@ -93,8 +97,19 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                         model_new = parts[0]
                         manufacturer_new = parts[1]
 
+                # Extract metadata from legacy SOLPLUS basic menu pages.
+                legacy_header = re.search(
+                    r"(SOLPLUS\s+\d+),\s*S/N\s+(\d+),\s*FW-Version\s+([\d.]+)",
+                    text,
+                    re.IGNORECASE,
+                )
+                if legacy_header is not None:
+                    manufacturer_new = "Solutronic"
+                    model_new = " ".join(legacy_header.group(1).split()).upper()
+                    self.device_serial = legacy_header.group(2)
+                    firmware_new = legacy_header.group(3)
+
                 # Extract firmware version
-                text = soup.get_text("\n", strip=True)
                 for line in text.split("\n"):
                     if "FW-Release:" not in line:
                         continue
@@ -133,6 +148,8 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
 
             if pac_values:
                 data["PAC_TOTAL"] = sum(pac_values)
+            elif isinstance(data.get("PAC"), (int, float)):
+                data["PAC_TOTAL"] = data["PAC"]
             else:
                 data.pop("PAC_TOTAL", None)
 
@@ -176,6 +193,7 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
 
             # Store latest valid dataset for fallback use
             self._last_data = data
+            self.supported_keys.update(key for key, value in data.items() if value is not None)
             if self._offline_logged:
                 _LOGGER.info("Solutronic inverter at %s is reachable again", self.ip_address)
                 self._offline_logged = False
@@ -211,11 +229,13 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
 
             # Set zero-values for momentary readings
             for key in zero_keys:
-                fallback[key] = 0
+                if key in self.supported_keys or key in last:
+                    fallback[key] = 0
 
             # Restore ET + EG + Derived total if known
             for key in retain_keys:
-                fallback[key] = last.get(key, 0)
+                if key in self.supported_keys or key in last:
+                    fallback[key] = last.get(key, 0)
 
             self._last_data = fallback
             return fallback

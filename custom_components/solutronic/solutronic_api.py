@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import asyncio
 import ipaddress
 import logging
+import re
 from urllib.parse import urlsplit
 
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -25,6 +26,7 @@ KNOWN_SENSOR_KEYS = {
     "IDC1", "IDC2", "IDC3", "ET", "EG", "SN", "MAXP", "ETA",
     "UACL1", "UACL2", "UACL3",
 }
+TELEMETRY_SENSOR_KEYS = KNOWN_SENSOR_KEYS - {"SN"}
 
 
 class SolutronicConnectionError(ConnectionError):
@@ -84,7 +86,17 @@ async def _fetch_text(session, url: str, timeout: aiohttp.ClientTimeout) -> str:
 
 
 def _parse_sensor_data(html_data: str) -> dict:
-    """Parse inverter telemetry from the Solutronic HTML table."""
+    """Parse inverter telemetry from supported Solutronic HTML layouts."""
+    data = _parse_table_sensor_data(html_data)
+    if TELEMETRY_SENSOR_KEYS.intersection(data):
+        return data
+
+    legacy_data = _parse_basic_menu_sensor_data(html_data)
+    return legacy_data or data
+
+
+def _parse_table_sensor_data(html_data: str) -> dict:
+    """Parse telemetry from newer Solutronic table layouts."""
     soup = BeautifulSoup(html_data, "html.parser")
     table = soup.find("table")
     data = {}
@@ -111,10 +123,64 @@ def _parse_sensor_data(html_data: str) -> dict:
     return data
 
 
+def _to_float(value: str):
+    """Convert a Solutronic number string to float."""
+    return float(value.replace(",", ".").strip())
+
+
+def _extract_labeled_number(text: str, label: str):
+    """Extract the numeric value after a label from the legacy basic menu page."""
+    match = re.search(
+        rf"{re.escape(label)}\s*:\s*([+-]?\d+(?:[.,]\d+)?)",
+        text,
+        re.IGNORECASE,
+    )
+    if match is None:
+        return None
+
+    return _to_float(match.group(1))
+
+
+def _parse_basic_menu_sensor_data(html_data: str) -> dict:
+    """Parse telemetry from old SOLPLUS basic menu HTML pages."""
+    soup = BeautifulSoup(html_data, "html.parser")
+    text = soup.get_text("\n", strip=True)
+
+    if "webserver for solplus" not in text.lower() and "solplus" not in text.lower():
+        return {}
+
+    data = {}
+
+    label_map = {
+        "power AC": "PAC",
+        "mains voltage": "UACL1",
+        "DC voltage": "UDC1",
+        "DC-current": "IDC1",
+        "energy today": "ET",
+        "energy total": "EG",
+        "efficiency": "ETA",
+        "maximum power today": "MAXP",
+    }
+
+    for label, key in label_map.items():
+        value = _extract_labeled_number(text, label)
+        if value is not None:
+            data[key] = value
+
+    if "PAC" in data:
+        data.setdefault("PACL1", data["PAC"])
+
+    serial_match = re.search(r"S/N\s+(\d+)", text, re.IGNORECASE)
+    if serial_match is not None:
+        data["SN"] = serial_match.group(1)
+
+    return data
+
+
 def _looks_like_solutronic_page(html_data: str) -> bool:
     """Return True only for pages that look like a Solutronic inverter page."""
     data = _parse_sensor_data(html_data)
-    if KNOWN_SENSOR_KEYS.intersection(data):
+    if TELEMETRY_SENSOR_KEYS.intersection(data):
         return True
 
     lower_html = html_data.lower()
@@ -216,7 +282,7 @@ async def async_get_sensor_data(ip_address: str, hass=None):
                 html_data = await _fetch_text(session, base, timeout)
 
     data = _parse_sensor_data(html_data)
-    if not KNOWN_SENSOR_KEYS.intersection(data):
+    if not TELEMETRY_SENSOR_KEYS.intersection(data):
         raise SolutronicInvalidResponseError("Endpoint did not return Solutronic telemetry")
 
     return data
