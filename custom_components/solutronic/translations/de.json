@@ -1,0 +1,90 @@
+{
+  "title": "Solutronic",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Solutronic-Wechselrichter einrichten",
+        "description": "Gib die IP-Adresse deines Solutronic-Wechselrichters ein.",
+        "data": {
+          "ip_address": "IP-Adresse"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zum Wechselrichter fehlgeschlagen.",
+      "invalid_host": "Gib eine gültige IPv4-Adresse für den Wechselrichter ein."
+    },
+    "abort": {
+      "already_configured": "Dieser Wechselrichter ist bereits konfiguriert."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Solutronic-Einstellungen",
+        "description": "Abfrageintervall anpassen.",
+        "data": {
+          "scan_interval": "Aktualisierungsintervall (Sekunden)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "total_ac_power": {
+        "name": "Gesamte AC-Leistung"
+      },
+      "l1_power": {
+        "name": "L1-Leistung"
+      },
+      "l2_power": {
+        "name": "L2-Leistung"
+      },
+      "l3_power": {
+        "name": "L3-Leistung"
+      },
+      "dc_voltage_1": {
+        "name": "DC-Spannung 1"
+      },
+      "dc_voltage_2": {
+        "name": "DC-Spannung 2"
+      },
+      "dc_voltage_3": {
+        "name": "DC-Spannung 3"
+      },
+      "dc_current_1": {
+        "name": "DC-Strom 1"
+      },
+      "dc_current_2": {
+        "name": "DC-Strom 2"
+      },
+      "dc_current_3": {
+        "name": "DC-Strom 3"
+      },
+      "daily_production": {
+        "name": "Tagesproduktion"
+      },
+      "inverter_total": {
+        "name": "Wechselrichter gesamt"
+      },
+      "total_production": {
+        "name": "Gesamtproduktion"
+      },
+      "max_power_today": {
+        "name": "Maximale Leistung heute"
+      },
+      "efficiency": {
+        "name": "Wirkungsgrad"
+      },
+      "grid_voltage_l1": {
+        "name": "Netzspannung L1"
+      },
+      "grid_voltage_l2": {
+        "name": "Netzspannung L2"
+      },
+      "grid_voltage_l3": {
+        "name": "Netzspannung L3"
+      }
+    }
+  }
+}

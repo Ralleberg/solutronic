@@ -13,6 +13,9 @@
     "error": {
       "cannot_connect": "Failed to connect to the inverter.",
       "invalid_host": "Enter a valid IPv4 address for the inverter."
+    },
+    "abort": {
+      "already_configured": "This inverter is already configured."
     }
   },
   "options": {
@@ -23,6 +26,64 @@
         "data": {
           "scan_interval": "Update interval (seconds)"
         }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "total_ac_power": {
+        "name": "Total AC power"
+      },
+      "l1_power": {
+        "name": "L1 power"
+      },
+      "l2_power": {
+        "name": "L2 power"
+      },
+      "l3_power": {
+        "name": "L3 power"
+      },
+      "dc_voltage_1": {
+        "name": "DC voltage 1"
+      },
+      "dc_voltage_2": {
+        "name": "DC voltage 2"
+      },
+      "dc_voltage_3": {
+        "name": "DC voltage 3"
+      },
+      "dc_current_1": {
+        "name": "DC current 1"
+      },
+      "dc_current_2": {
+        "name": "DC current 2"
+      },
+      "dc_current_3": {
+        "name": "DC current 3"
+      },
+      "daily_production": {
+        "name": "Daily production"
+      },
+      "inverter_total": {
+        "name": "Inverter total"
+      },
+      "total_production": {
+        "name": "Total production"
+      },
+      "max_power_today": {
+        "name": "Maximum power today"
+      },
+      "efficiency": {
+        "name": "Efficiency"
+      },
+      "grid_voltage_l1": {
+        "name": "Grid voltage L1"
+      },
+      "grid_voltage_l2": {
+        "name": "Grid voltage L2"
+      },
+      "grid_voltage_l3": {
+        "name": "Grid voltage L3"
       }
     }
   }

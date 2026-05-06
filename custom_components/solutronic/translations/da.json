@@ -13,6 +13,9 @@
     "error": {
       "cannot_connect": "Kunne ikke forbinde til inverteren.",
       "invalid_host": "Indtast en gyldig IPv4-adresse til inverteren."
+    },
+    "abort": {
+      "already_configured": "Denne inverter er allerede konfigureret."
     }
   },
   "options": {
@@ -23,6 +26,64 @@
         "data": {
           "scan_interval": "Opdateringsinterval (sekunder)"
         }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "total_ac_power": {
+        "name": "Samlet AC-effekt"
+      },
+      "l1_power": {
+        "name": "L1-effekt"
+      },
+      "l2_power": {
+        "name": "L2-effekt"
+      },
+      "l3_power": {
+        "name": "L3-effekt"
+      },
+      "dc_voltage_1": {
+        "name": "DC-spænding 1"
+      },
+      "dc_voltage_2": {
+        "name": "DC-spænding 2"
+      },
+      "dc_voltage_3": {
+        "name": "DC-spænding 3"
+      },
+      "dc_current_1": {
+        "name": "DC-strøm 1"
+      },
+      "dc_current_2": {
+        "name": "DC-strøm 2"
+      },
+      "dc_current_3": {
+        "name": "DC-strøm 3"
+      },
+      "daily_production": {
+        "name": "Dagens produktion"
+      },
+      "inverter_total": {
+        "name": "Inverter total"
+      },
+      "total_production": {
+        "name": "Total produktion"
+      },
+      "max_power_today": {
+        "name": "Maksimal effekt i dag"
+      },
+      "efficiency": {
+        "name": "Effektivitet"
+      },
+      "grid_voltage_l1": {
+        "name": "Netspænding L1"
+      },
+      "grid_voltage_l2": {
+        "name": "Netspænding L2"
+      },
+      "grid_voltage_l3": {
+        "name": "Netspænding L3"
       }
     }
   }
