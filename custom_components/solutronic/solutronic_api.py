@@ -1,11 +1,14 @@
-# All comments are in English (per your preference)
-
 import aiohttp
 from bs4 import BeautifulSoup
 import asyncio
+import ipaddress
+import logging
+from urllib.parse import urlsplit
+
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-# We will probe both typical ports and both paths
+_LOGGER = logging.getLogger(__name__)
+
 PORTS_TO_TRY = (8888, 80)
 PATHS_TO_TRY = ("/solutronic/", "/")
 
@@ -17,15 +20,49 @@ _DEFAULT_HEADERS = {
                   "(KHTML, like Gecko) Chrome/123.0 Safari/537.36"
 }
 
+KNOWN_SENSOR_KEYS = {
+    "PAC", "PACL1", "PACL2", "PACL3", "UDC1", "UDC2", "UDC3",
+    "IDC1", "IDC2", "IDC3", "ET", "EG", "SN", "MAXP", "ETA",
+    "UACL1", "UACL2", "UACL3",
+}
+
+
+class SolutronicConnectionError(ConnectionError):
+    """Raised when no Solutronic endpoint can be reached."""
+
+
+class SolutronicInvalidResponseError(ValueError):
+    """Raised when an endpoint responds but does not expose inverter data."""
+
+
+def normalize_ip_address(value: str) -> str:
+    """Return a validated IPv4 address from user input or URL-like input."""
+    if not isinstance(value, str):
+        raise ValueError("IP address must be a string")
+
+    raw_value = value.strip()
+    if not raw_value:
+        raise ValueError("IP address is required")
+
+    parsed = urlsplit(raw_value if "://" in raw_value else f"http://{raw_value}")
+    host = parsed.hostname
+    if host is None:
+        raise ValueError("IP address is invalid")
+
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError as err:
+        raise ValueError("IP address is invalid") from err
+
+    if ip.version != 4:
+        raise ValueError("Only IPv4 addresses are supported")
+
+    return str(ip)
+
 
 def _build_url(ip: str, port: int, path: str) -> str:
     """Build a normalized URL with scheme, port and a single trailing slash."""
-    ip = ip.strip()
-    if not ip.startswith("http://") and not ip.startswith("https://"):
-        ip = "http://" + ip
-    # Strip any path and port the user might have typed; we decide those here
-    # (config_flow already cleans, but we make this robust)
-    host = ip.split("//", 1)[1].split("/", 1)[0].split(":", 1)[0]
+    host = normalize_ip_address(ip)
     base = f"http://{host}:{port}"
     path = path if path.startswith("/") else "/" + path
     base = base.rstrip("/") + path
@@ -36,17 +73,60 @@ def _build_url(ip: str, port: int, path: str) -> str:
 
 def _cache_key(ip: str) -> str:
     """Return a stable cache key (host) regardless of how the user typed the IP."""
-    ip = ip.strip()
-    if ip.startswith("http://") or ip.startswith("https://"):
-        host = ip.split("//", 1)[1].split("/", 1)[0]
-    else:
-        host = ip.split("/", 1)[0]
-    host = host.split(":", 1)[0]
-    return host
+    return normalize_ip_address(ip)
+
+
+async def _fetch_text(session, url: str, timeout: aiohttp.ClientTimeout) -> str:
+    """Fetch text from a URL and fail on non-successful HTTP statuses."""
+    async with session.get(url, timeout=timeout, headers=_DEFAULT_HEADERS) as response:
+        response.raise_for_status()
+        return await response.text()
+
+
+def _parse_sensor_data(html_data: str) -> dict:
+    """Parse inverter telemetry from the Solutronic HTML table."""
+    soup = BeautifulSoup(html_data, "html.parser")
+    table = soup.find("table")
+    data = {}
+
+    if not table:
+        return data
+
+    for row in table.find_all("tr"):
+        cols = row.find_all("td")
+        if len(cols) != 4:
+            continue
+
+        key = cols[1].get_text(strip=True)
+        if not key:
+            continue
+
+        raw_value = cols[3].get_text(strip=True).replace("\xa0", "").strip()
+        try:
+            value = float(raw_value.replace(",", "."))
+        except ValueError:
+            value = raw_value
+        data[key] = value
+
+    return data
+
+
+def _looks_like_solutronic_page(html_data: str) -> bool:
+    """Return True only for pages that look like a Solutronic inverter page."""
+    data = _parse_sensor_data(html_data)
+    if KNOWN_SENSOR_KEYS.intersection(data):
+        return True
+
+    lower_html = html_data.lower()
+    return (
+        "solutronic" in lower_html
+        or "solplus" in lower_html
+        or "fw-release" in lower_html
+    )
 
 
 async def _probe_working_base(ip: str, hass=None, session=None) -> str:
-    """Try all port/path combos and return the first that responds with HTTP 200."""
+    """Try all port/path combos and return the first Solutronic-looking endpoint."""
     key = _cache_key(ip)
     if key in _BASE_URL_CACHE:
         return _BASE_URL_CACHE[key]
@@ -66,19 +146,22 @@ async def _probe_working_base(ip: str, hass=None, session=None) -> str:
             for path in PATHS_TO_TRY:
                 url = _build_url(ip, port, path)
                 try:
-                    async with session.get(url, timeout=timeout) as resp:
-                        # Many Solutronic pages return 200 with an HTML table right on root
-                        if resp.status == 200:
-                            _BASE_URL_CACHE[key] = url
-                            return url
-                except Exception:
+                    html_data = await _fetch_text(session, url, timeout)
+                except (aiohttp.ClientError, asyncio.TimeoutError):
+                    _LOGGER.debug("Solutronic probe failed for %s", url, exc_info=True)
                     continue
+
+                if _looks_like_solutronic_page(html_data):
+                    _BASE_URL_CACHE[key] = url
+                    return url
     finally:
         if owns_session:
             await session.close()
 
-    raise ConnectionError(f"No responding Solutronic endpoint found on {ip} "
-                          f"for ports {PORTS_TO_TRY} and paths {PATHS_TO_TRY}.")
+    raise SolutronicConnectionError(
+        f"No Solutronic endpoint found on {ip} for ports {PORTS_TO_TRY} "
+        f"and paths {PATHS_TO_TRY}."
+    )
 
 
 async def async_get_raw_html(ip_address: str, hass=None) -> str:
@@ -90,27 +173,23 @@ async def async_get_raw_html(ip_address: str, hass=None) -> str:
         try:
             base = await _probe_working_base(ip_address, hass=hass, session=session)
             try:
-                async with session.get(base, timeout=timeout) as response:
-                    return await response.text()
-            except Exception:
+                return await _fetch_text(session, base, timeout)
+            except (aiohttp.ClientError, asyncio.TimeoutError):
                 # Cached base might be stale; clear and reprobe once
                 _BASE_URL_CACHE.pop(_cache_key(ip_address), None)
                 base = await _probe_working_base(ip_address, hass=hass, session=session)
-                async with session.get(base, timeout=timeout) as response:
-                    return await response.text()
-        except Exception:
+                return await _fetch_text(session, base, timeout)
+        except ValueError:
             raise
 
     async with aiohttp.ClientSession(timeout=timeout, headers=_DEFAULT_HEADERS) as session:
         base = await _probe_working_base(ip_address, session=session)
         try:
-            async with session.get(base) as response:
-                return await response.text()
-        except Exception:
+            return await _fetch_text(session, base, timeout)
+        except (aiohttp.ClientError, asyncio.TimeoutError):
             _BASE_URL_CACHE.pop(_cache_key(ip_address), None)
             base = await _probe_working_base(ip_address, session=session)
-            async with session.get(base) as response:
-                return await response.text()
+            return await _fetch_text(session, base, timeout)
 
 
 async def async_get_sensor_data(ip_address: str, hass=None):
@@ -121,58 +200,23 @@ async def async_get_sensor_data(ip_address: str, hass=None):
         session = async_get_clientsession(hass)
         base = await _probe_working_base(ip_address, hass=hass, session=session)
         try:
-            async with session.get(base, timeout=timeout) as response:
-                html_data = await response.text()
-        except Exception:
+            html_data = await _fetch_text(session, base, timeout)
+        except (aiohttp.ClientError, asyncio.TimeoutError):
             _BASE_URL_CACHE.pop(_cache_key(ip_address), None)
             base = await _probe_working_base(ip_address, hass=hass, session=session)
-            async with session.get(base, timeout=timeout) as response:
-                html_data = await response.text()
+            html_data = await _fetch_text(session, base, timeout)
     else:
         async with aiohttp.ClientSession(timeout=timeout, headers=_DEFAULT_HEADERS) as session:
             base = await _probe_working_base(ip_address, session=session)
             try:
-                async with session.get(base) as response:
-                    html_data = await response.text()
-            except Exception:
+                html_data = await _fetch_text(session, base, timeout)
+            except (aiohttp.ClientError, asyncio.TimeoutError):
                 _BASE_URL_CACHE.pop(_cache_key(ip_address), None)
                 base = await _probe_working_base(ip_address, session=session)
-                async with session.get(base) as response:
-                    html_data = await response.text()
+                html_data = await _fetch_text(session, base, timeout)
 
-    soup = BeautifulSoup(html_data, "html.parser")
-    table = soup.find("table")
-
-    data = {}
-
-    if table:
-        for row in table.find_all("tr"):
-            cols = row.find_all("td")
-            if len(cols) == 4:
-                key = cols[1].get_text(strip=True)
-                raw_value = cols[3].get_text(strip=True).replace("\xa0", "").strip()
-                # Try numeric conversion; fall back to the original string
-                try:
-                    value = float(raw_value.replace(",", "."))
-                except ValueError:
-                    value = raw_value
-                data[key] = value
+    data = _parse_sensor_data(html_data)
+    if not KNOWN_SENSOR_KEYS.intersection(data):
+        raise SolutronicInvalidResponseError("Endpoint did not return Solutronic telemetry")
 
     return data
-
-
-async def async_get_mac(ip_address: str):
-    """Return MAC address for the device using ARP lookup (if available)."""
-    proc = await asyncio.create_subprocess_shell(
-        f"arp -n {ip_address}",
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, _ = await proc.communicate()
-    output = stdout.decode().lower()
-
-    for part in output.split():
-        if ":" in part and len(part) == 17:
-            return part.strip()
-
-    return None

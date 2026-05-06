@@ -1,11 +1,20 @@
 import logging
 from datetime import timedelta
 
+from bs4 import BeautifulSoup
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from .solutronic_api import async_get_sensor_data, async_get_raw_html, async_get_mac
-from .discovery import discover_solutronic  # used for auto-reconnect scan
+
+from .solutronic_api import async_get_sensor_data, async_get_raw_html
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _as_float(value, default=0.0):
+    """Return value as float, or default when the inverter reports unexpected data."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
 
 
 class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
@@ -29,8 +38,7 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
         self._lt_prev_et = None
         self._lt_total = None
 
-        # Used to avoid repeating bridge-mode warning log
-        self._bridge_warning_logged = False
+        self._offline_logged = False
 
         # Device metadata (persisted in config entry when available)
         if entry is not None:
@@ -67,24 +75,34 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
             # --- Parse device metadata from raw HTML ---
             try:
                 html = await async_get_raw_html(self.ip_address, self.hass)
+                soup = BeautifulSoup(html, "html.parser")
 
                 manufacturer_new = self.device_manufacturer
                 model_new = self.device_model
                 firmware_new = self.device_firmware
 
                 # Extract manufacturer and model from <h1> header
-                if "<h1>" in html:
-                    header = html.split("<h1>")[1].split("</h1>")[0]
-                    parts = [line.strip() for line in header.replace("<br>", "\n").split("\n") if line.strip()]
+                header = soup.find("h1")
+                if header is not None:
+                    parts = [
+                        line.strip()
+                        for line in header.get_text("\n", strip=True).split("\n")
+                        if line.strip()
+                    ]
                     if len(parts) >= 2:
                         model_new = parts[0]
                         manufacturer_new = parts[1]
 
                 # Extract firmware version
-                if "FW-Release" in html:
-                    fw_line = html.split("FW-Release:")[1].split("<")[0].strip()
+                text = soup.get_text("\n", strip=True)
+                for line in text.split("\n"):
+                    if "FW-Release:" not in line:
+                        continue
+
+                    fw_line = line.split("FW-Release:", 1)[1].strip()
                     if fw_line:
                         firmware_new = fw_line
+                    break
 
                 # Apply parsed metadata
                 self.device_manufacturer = manufacturer_new
@@ -119,16 +137,20 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                 data.pop("PAC_TOTAL", None)
 
             # --- Derived lifetime energy counter based on ET (energy today) ---
-            et = data.get("ET")
-            real_total = float(data.get("EG", 0) or 0)
-            pac = data.get("PAC_TOTAL", 0) or 0
+            raw_et = data.get("ET")
+            et = _as_float(raw_et, None) if raw_et is not None else None
+            real_total = _as_float(data.get("EG"), 0.0)
+            pac = _as_float(data.get("PAC_TOTAL"), 0.0)
 
             # Initialize on first run after HA restart
             if self._lt_prev_et is None:
                 self._lt_prev_et = et
                 self._lt_total = real_total
 
-            if et is not None:
+            if et is not None and self._lt_prev_et is None:
+                self._lt_prev_et = et
+
+            if et is not None and self._lt_prev_et is not None and self._lt_total is not None:
                 # --- Case 1: ET increased normally (daytime production) ---
                 if et > self._lt_prev_et and pac > 0:
                     self._lt_total += (et - self._lt_prev_et)
@@ -150,36 +172,26 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
 
             else:
                 # If ET missing, just report stored total
-                data["LIFETIME_DERIVED"] = round(self._lt_total, 3)
+                data["LIFETIME_DERIVED"] = round(real_total, 3)
 
             # Store latest valid dataset for fallback use
             self._last_data = data
+            if self._offline_logged:
+                _LOGGER.info("Solutronic inverter at %s is reachable again", self.ip_address)
+                self._offline_logged = False
             return data
 
         except Exception as err:
             # Log failure (not as error to avoid log spam)
-            _LOGGER.warning(
-                "Failed to fetch data from Solutronic inverter (%s): %s",
-                self.ip_address,
-                err,
-            )
-
-            # ---- Docker Bridge Mode Detection (no ARP visibility) ----
-            try:
-                mac = await async_get_mac(self.ip_address)
-                if mac is None and not self._bridge_warning_logged:
-                    _LOGGER.warning(
-                        "Auto-reconnect disabled: Home Assistant appears to be running in Docker bridge mode "
-                        "(no ARP visibility). The integration will continue working, "
-                        "but automatic IP recovery will not be available. "
-                        "Use host network mode to enable auto-reconnect."
-                    )
-                    self._bridge_warning_logged = True
-            except Exception:
-                pass
+            if not self._offline_logged:
+                _LOGGER.warning(
+                    "Failed to fetch data from Solutronic inverter (%s): %s",
+                    self.ip_address,
+                    err,
+                )
+                self._offline_logged = True
 
             # ---- Controlled fallback data behavior ----
-
             last = self._last_data or {}
 
             # Keys that should retain last known values (energy data)

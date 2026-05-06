@@ -11,7 +11,8 @@
       }
     },
     "error": {
-      "cannot_connect": "Kunne ikke forbinde til inverteren."
+      "cannot_connect": "Kunne ikke forbinde til inverteren.",
+      "invalid_host": "Indtast en gyldig IPv4-adresse til inverteren."
     }
   },
   "options": {

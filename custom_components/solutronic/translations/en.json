@@ -11,7 +11,8 @@
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to the inverter."
+      "cannot_connect": "Failed to connect to the inverter.",
+      "invalid_host": "Enter a valid IPv4 address for the inverter."
     }
   },
   "options": {

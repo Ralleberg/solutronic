@@ -76,7 +76,7 @@ class SolutronicSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self):
         """Return the current sensor value."""
-        return self.coordinator.data.get(self._key)
+        return (self.coordinator.data or {}).get(self._key)
 
     @property
     def available(self):
