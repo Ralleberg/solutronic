@@ -81,7 +81,7 @@ class SolutronicSensor(CoordinatorEntity, SensorEntity):
     @property
     def available(self):
         """Return True if the coordinator has successfully updated at least once."""
-        return self.coordinator.last_update_success
+        return self.coordinator.last_update_success and self._key in (self.coordinator.data or {})
 
     @property
     def device_info(self):

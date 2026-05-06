@@ -61,6 +61,7 @@ The integration keeps the lifetime sensor stable across temporary inverter outag
 | SOLPLUS 100 | ✅ | Fully supported |
 | SOLPLUS 50 | ⚠️ | Expected to work |
 | SOLPLUS 35 | ⚠️ | Expected to work |
+| SOLPLUS 25 | ✅ | Supported with firmware 2.53 legacy HTML |
 
 If you own another model, please share an `index.html` or `stat.xml` sample to improve compatibility.
 
