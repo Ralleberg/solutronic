@@ -4,7 +4,7 @@
 
 # Solutronic Solar Inverter Integration for Home Assistant
 
-This integration allows Home Assistant to retrieve live data from Solutronic SOLPLUS inverters and expose them as sensors — including **full support for the Home Assistant Energy Dashboard**.
+This integration allows Home Assistant to retrieve live data from Solutronic SOLPLUS inverters and expose supported values as Home Assistant sensors, including Energy Dashboard compatible production sensors.
 
 ![HACS](https://img.shields.io/badge/HACS-custom-blue)
 
@@ -13,18 +13,18 @@ This integration allows Home Assistant to retrieve live data from Solutronic SOL
 ## ✨ Features
 
 - Manual inverter IP setup with automatic endpoint detection on common Solutronic ports/paths
-- Live AC output power:
-  - `PAC` (instant power)
-  - `PAC_TOTAL` (sum of all available phases)
-- Daily (`ET`) and lifetime (`EG`) production sensors  
-- Energy Dashboard compatible lifetime production sensor
-- DC voltages, DC currents, and AC phase voltages
+- Live AC output power, including total AC power
+- Daily, inverter lifetime, and derived total production sensors
+- Energy Dashboard compatible energy sensors
+- DC voltage/current and grid voltage/current sensors where reported by the inverter
 - Efficiency metrics and maximum daily power
 - Automatic extraction of:
   - **Model**
+  - **Serial number**
   - **Manufacturer**
   - **Firmware version**
-- Stable and fault-tolerant — sensors remain available even when the inverter is offline (e.g., at night)
+- Model-aware entity setup: sensors that are not reported by the inverter are not created on new setups
+- Stable fallback behavior during temporary inverter outages
 
 ---
 
@@ -36,7 +36,7 @@ This integration exposes a stable lifetime production sensor based on the invert
 
 | Property | Value |
 |-----------|--------|
-| **Name** | `Solutronic total produktion` |
+| **Name** | `Solutronic Total production` |
 | **Unit** | kWh |
 | **Device class** | `energy` |
 | **State class** | `total_increasing` |
@@ -102,15 +102,47 @@ The integration **automatically normalizes the URL**.
 
 ---
 
+## 📡 Sensors
+
+Entity names are created in English by default. You can rename them manually in Home Assistant if you prefer local or custom names.
+
+The integration only creates sensors for values reported by the inverter during setup. For example, a SOLPLUS 25 will not create L2/L3 sensors if the inverter only exposes single-phase values.
+
+Common sensors include:
+
+| Sensor name | Description |
+|---|---|
+| `Total AC power` | Total current AC output power |
+| `L1 power` | AC output power for phase L1 |
+| `L2 power` | AC output power for phase L2, if reported |
+| `L3 power` | AC output power for phase L3, if reported |
+| `Grid voltage L1` | Grid voltage for phase L1 |
+| `Grid voltage L2` | Grid voltage for phase L2, if reported |
+| `Grid voltage L3` | Grid voltage for phase L3, if reported |
+| `Grid current L1` | Grid current for phase L1, if reported |
+| `DC voltage 1` | DC input voltage 1 |
+| `DC voltage 2` | DC input voltage 2, if reported |
+| `DC voltage 3` | DC input voltage 3, if reported |
+| `DC current 1` | DC input current 1 |
+| `DC current 2` | DC input current 2, if reported |
+| `DC current 3` | DC input current 3, if reported |
+| `Daily production` | Energy produced today |
+| `Inverter total` | Lifetime energy reported by the inverter |
+| `Total production` | Stable total production sensor for Energy Dashboard use |
+| `Maximum power today` | Highest AC output power today |
+| `Efficiency` | Current inverter efficiency, if reported |
+
+---
+
 ## 📊 Energy Dashboard Setup
 
 Add the following sensors:
 
 | Sensor | Select as |
 |---|---|
-| `sensor.solutronic_total_produktion` | Solar production (kWh) ✅ Recommended |
-| `sensor.solutronic_dagens_produktion` | Optional daily production |
-| `sensor.solutronic_samlet_ac_effekt` | Real-time solar power (optional) |
+| `sensor.solutronic_total_production` | Solar production (kWh) ✅ Recommended |
+| `sensor.solutronic_daily_production` | Optional daily production |
+| `sensor.solutronic_total_ac_power` | Real-time solar power (optional) |
 
 ---
 
@@ -122,6 +154,7 @@ If sensors do not update:
 2. Ensure no firewall blocks access on your LAN  
 3. Restart the integration via:  
    **Developer Tools → Restart / Reload Integration**
+4. If old unsupported entities remain after an update, remove them manually from Home Assistant’s entity registry. Home Assistant does not always delete old registry entries automatically.
 
 ---
 
