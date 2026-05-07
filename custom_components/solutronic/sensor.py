@@ -27,6 +27,7 @@ SENSORS = {
     "IDC1": ("DC current 1", "A", SensorDeviceClass.CURRENT, SensorStateClass.MEASUREMENT, "mdi:current-dc"),
     "IDC2": ("DC current 2", "A", SensorDeviceClass.CURRENT, SensorStateClass.MEASUREMENT, "mdi:current-dc"),
     "IDC3": ("DC current 3", "A", SensorDeviceClass.CURRENT, SensorStateClass.MEASUREMENT, "mdi:current-dc"),
+    "IAC1": ("Grid current L1", "A", SensorDeviceClass.CURRENT, SensorStateClass.MEASUREMENT, "mdi:current-ac"),
 
     # --- ENERGY (for Energy Dashboard) ---
     "ET": ("Daily production", "kWh", SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, "mdi:solar-power"),

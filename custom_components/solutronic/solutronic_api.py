@@ -23,7 +23,7 @@ _DEFAULT_HEADERS = {
 
 KNOWN_SENSOR_KEYS = {
     "PAC", "PACL1", "PACL2", "PACL3", "UDC1", "UDC2", "UDC3",
-    "IDC1", "IDC2", "IDC3", "ET", "EG", "SN", "MAXP", "ETA",
+    "IDC1", "IDC2", "IDC3", "IAC1", "ET", "EG", "SN", "MAXP", "ETA",
     "UACL1", "UACL2", "UACL3",
 }
 TELEMETRY_SENSOR_KEYS = KNOWN_SENSOR_KEYS - {"SN"}
@@ -154,6 +154,7 @@ def _parse_basic_menu_sensor_data(html_data: str) -> dict:
     label_map = {
         "power AC": "PAC",
         "mains voltage": "UACL1",
+        "mains current": "IAC1",
         "DC voltage": "UDC1",
         "DC-current": "IDC1",
         "energy today": "ET",

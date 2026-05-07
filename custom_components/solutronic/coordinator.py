@@ -221,6 +221,7 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
                 "PACL1", "PACL2", "PACL3",
                 "UDC1", "UDC2", "UDC3",
                 "IDC1", "IDC2", "IDC3",
+                "IAC1",
                 "MAXP", "ETA",
                 "UACL1", "UACL2", "UACL3",
             ]
