@@ -46,10 +46,24 @@ SENSORS = {
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up sensors when config entry is added."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
+    supported_keys = set(coordinator.data or {})
+
+    # If the inverter was reachable during setup, only create entities for
+    # values this model actually reports. If setup starts while the inverter is
+    # temporarily offline, keep the broad entity set so existing installs still
+    # recover when data returns.
+    if supported_keys:
+        sensor_items = [
+            (key, values)
+            for key, values in SENSORS.items()
+            if key in supported_keys
+        ]
+    else:
+        sensor_items = SENSORS.items()
 
     entities = [
         SolutronicSensor(coordinator, entry.entry_id, key, *values)
-        for key, values in SENSORS.items()
+        for key, values in sensor_items
     ]
 
     async_add_entities(entities)
