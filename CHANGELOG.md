@@ -10,7 +10,6 @@
 
 ## 2.0.0
 
-- Change the project license to MIT.
 - Allow manual removal of obsolete Solutronic devices and their stale entities
   from HA's device page. Protect the current device, current sensor IDs, disabled
   current sensors, loaded entities, and entities owned by other entries/integrations.
