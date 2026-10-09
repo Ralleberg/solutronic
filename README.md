@@ -30,10 +30,12 @@ solar production, AC and DC measurements, and device information directly from
 the inverter's built-in web interface, with production sensors ready for the
 Home Assistant Energy Dashboard.
 
-**v2.0.0** adds automatic network discovery, saved energy-counter state, connection
-diagnostics, and manual removal of obsolete devices while preserving existing
-configurations and sensor identity. See the [v2.0.0 changelog](CHANGELOG.md#200)
-for details. The release badge above follows the latest published GitHub release.
+**v2.0.1** fixes German legacy HTML parsing for the supplied SOLPLUS 55 / firmware
+2.65 page. Verified against the user's HTML; physical hardware verification is
+pending. It retains the automatic discovery, saved energy-counter state,
+diagnostics, and obsolete-device removal introduced in v2.0.0. See the
+[v2.0.1 changelog](CHANGELOG.md#201) for details. The release badge above follows
+the latest published GitHub release.
 
 [Installation](#installation) · [Configuration](#configuration) ·
 [Sensors](#sensors) · [Energy Dashboard](#energy-dashboard) ·
@@ -104,7 +106,7 @@ for details.
 Update through HACS, or replace the integration folder for a manual installation,
 then restart Home Assistant. Keep the existing integration entry.
 
-Version **2.0.0** preserves config entry versions, sensor unique IDs, names, units,
+Version **2.0.1** preserves config entry versions, sensor unique IDs, names, units,
 state classes, and polling options. The derived energy counter is initialized
 from the inverter's lifetime reading on its first start without saved state,
 matching the previous behavior. Once saved, its state is restored on later starts.

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.1
 
 - Parse German legacy SOLPLUS labels and the spaced `FW-Release` metadata header
   from issue #6's SOLPLUS 55 / firmware 2.65 HTML. Preserve English legacy parsing,
