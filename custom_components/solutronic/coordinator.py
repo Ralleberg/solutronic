@@ -184,7 +184,8 @@ class SolutronicDataUpdateCoordinator(DataUpdateCoordinator):
 
                 # Extract metadata from legacy SOLPLUS basic menu pages.
                 legacy_header = re.search(
-                    r"(SOLPLUS\s+\d+),\s*S/N\s+(\d+),\s*FW-Version\s+([\d.]+)",
+                    r"(SOLPLUS\s+\d+)\s*,\s*S/N\s+(\d+)\s*,\s*"
+                    r"FW-(?:Version|Release)\s*:?\s*([\d.]+)",
                     text,
                     re.IGNORECASE,
                 )

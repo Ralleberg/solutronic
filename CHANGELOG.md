@@ -1,8 +1,15 @@
 # Changelog
 
+## 2.0.1
+
+- Parse German legacy SOLPLUS labels and the spaced `FW-Release` metadata header
+  from issue #6's SOLPLUS 55 / firmware 2.65 HTML. Preserve English legacy parsing,
+  modern tables, sensor identity, and persisted energy state. The sample reports
+  AC power without individual phases; do not invent phase or slave
+  measurements. Verified against user-supplied HTML, pending hardware confirmation.
+
 ## 2.0.0
 
-- Change the project license to MIT.
 - Allow manual removal of obsolete Solutronic devices and their stale entities
   from HA's device page. Protect the current device, current sensor IDs, disabled
   current sensors, loaded entities, and entities owned by other entries/integrations.
