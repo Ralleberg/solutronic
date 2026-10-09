@@ -4,14 +4,49 @@
 
 # Solutronic for Home Assistant
 
+<p align="center">
+  <a href="https://github.com/Ralleberg/solutronic/releases/latest">
+    <img src="https://img.shields.io/github/v/release/Ralleberg/solutronic?style=for-the-badge&amp;label=Release&amp;color=007ec6" alt="Latest published GitHub release">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-97ca00?style=for-the-badge" alt="License: MIT">
+  </a>
+  <a href="https://github.com/Ralleberg/solutronic/releases">
+    <img src="https://img.shields.io/github/downloads/Ralleberg/solutronic/total?style=for-the-badge&amp;label=Asset%20downloads&amp;color=e05d44" alt="GitHub release asset downloads">
+  </a>
+  <a href="https://www.home-assistant.io/">
+    <img src="https://img.shields.io/badge/Home%20Assistant-Integration-41bdf5?style=for-the-badge&amp;logo=homeassistant&amp;logoColor=41bdf5" alt="Home Assistant integration">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=Ralleberg&amp;repository=solutronic&amp;category=integration">
+    <img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open the Solutronic repository in HACS">
+  </a>
+</p>
+
 A local Home Assistant integration for Solutronic SOLPLUS solar inverters. Monitor
 solar production, AC and DC measurements, and device information directly from
 the inverter's built-in web interface, with production sensors ready for the
 Home Assistant Energy Dashboard.
 
+**v2.0.0** adds automatic network discovery, saved energy-counter state, connection
+diagnostics, and manual removal of obsolete devices while preserving existing
+configurations and sensor identity. See the [v2.0.0 changelog](CHANGELOG.md#200)
+for details. The release badge above follows the latest published GitHub release.
+
 [Installation](#installation) · [Configuration](#configuration) ·
 [Sensors](#sensors) · [Energy Dashboard](#energy-dashboard) ·
 [Troubleshooting](#troubleshooting) · [Changelog](CHANGELOG.md)
+
+## Requirements
+
+- A Solutronic inverter exposing a supported built-in HTTP web interface.
+- An IPv4 network connection from Home Assistant to the inverter.
+- HACS for the repository button and HACS installation, or use manual installation.
+
+Discovery additionally requires UDP broadcasts to reach the inverter's local
+subnet. Manual IP setup remains available when broadcast discovery is unavailable.
 
 ## Features
 
@@ -37,6 +72,10 @@ Home Assistant Energy Dashboard.
 ## Installation
 
 ### HACS
+
+Use the **Open HACS repository** button above to open Solutronic in your Home
+Assistant instance, then download it, restart Home Assistant, and add the
+integration. HACS must already be installed. To add the repository manually:
 
 1. Open **HACS → menu → Custom repositories**.
 2. Add `https://github.com/Ralleberg/solutronic` with category **Integration**.
@@ -182,7 +221,7 @@ firmware and page format, as well as the model name.
 | Model | Compatibility notes |
 | --- | --- |
 | SOLPLUS 100 | Primary supported model |
-| SOLPLUS 50 / 35 | Expected to work when a supported web layout is available; verify the specific firmware |
+| SOLPLUS 50 / 35 | Requires a supported web layout; hardware compatibility was not verified by this update |
 | SOLPLUS 25 | Legacy HTML parsing is available, including the firmware 2.53 layout; compatibility with other firmware requires verification |
 
 This update focuses on discovery and reliability. It does not establish support
@@ -249,11 +288,21 @@ responses, sensor identity, options, HTTP endpoint handling, both HTML parsers,
 and UDP discovery and config-flow behavior. Network responses and sockets are
 mocked; storage tests use temporary directories.
 
+Tests also cover manual legacy-device removal using Home Assistant's real device
+and entity registries, including protection of current and disabled entities.
+
 The 73-test suite has passed locally on Home Assistant **2024.1.6**, **2024.6.4**,
 and **2026.10.0**. GitHub Actions is configured to run the same compatibility
 matrix, along with Ruff lint and formatting checks. See
 [tests/README.md](tests/README.md) for commands and dependency details, and
 [CHANGELOG.md](CHANGELOG.md) for changes.
+
+The asset-download badge counts GitHub release assets. It excludes HACS
+installations and GitHub-generated source archives.
+
+## License
+
+Distributed under the [MIT License](LICENSE).
 
 ## Maintainer
 
