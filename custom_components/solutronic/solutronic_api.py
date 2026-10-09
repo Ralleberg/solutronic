@@ -1,12 +1,14 @@
-import aiohttp
-from bs4 import BeautifulSoup
 import asyncio
 import ipaddress
 import logging
 import re
 from urllib.parse import urlsplit
 
+import aiohttp
+from bs4 import BeautifulSoup
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from .util import as_energy, as_float
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,13 +20,29 @@ _BASE_URL_CACHE = {}
 # A simple desktop-like User-Agent; some inverters behave better when this is present
 _DEFAULT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/123.0 Safari/537.36"
+    "(KHTML, like Gecko) Chrome/123.0 Safari/537.36"
 }
 
 KNOWN_SENSOR_KEYS = {
-    "PAC", "PACL1", "PACL2", "PACL3", "UDC1", "UDC2", "UDC3",
-    "IDC1", "IDC2", "IDC3", "IAC1", "ET", "EG", "SN", "MAXP", "ETA",
-    "UACL1", "UACL2", "UACL3",
+    "PAC",
+    "PACL1",
+    "PACL2",
+    "PACL3",
+    "UDC1",
+    "UDC2",
+    "UDC3",
+    "IDC1",
+    "IDC2",
+    "IDC3",
+    "IAC1",
+    "ET",
+    "EG",
+    "SN",
+    "MAXP",
+    "ETA",
+    "UACL1",
+    "UACL2",
+    "UACL3",
 }
 TELEMETRY_SENSOR_KEYS = KNOWN_SENSOR_KEYS - {"SN"}
 
@@ -76,6 +94,11 @@ def _build_url(ip: str, port: int, path: str) -> str:
 def _cache_key(ip: str) -> str:
     """Return a stable cache key (host) regardless of how the user typed the IP."""
     return normalize_ip_address(ip)
+
+
+def get_cached_base_url(ip: str):
+    """Return the discovered endpoint without triggering a network request."""
+    return _BASE_URL_CACHE.get(_cache_key(ip))
 
 
 async def _fetch_text(session, url: str, timeout: aiohttp.ClientTimeout) -> str:
@@ -231,59 +254,45 @@ async def _probe_working_base(ip: str, hass=None, session=None) -> str:
     )
 
 
+async def _async_fetch_raw_html(ip_address, session):
+    """Fetch from the cached endpoint, rediscovering it once on network failure."""
+    timeout = aiohttp.ClientTimeout(total=10)
+    base = await _probe_working_base(ip_address, session=session)
+    try:
+        return await _fetch_text(session, base, timeout)
+    except (aiohttp.ClientError, asyncio.TimeoutError):
+        _BASE_URL_CACHE.pop(_cache_key(ip_address), None)
+        base = await _probe_working_base(ip_address, session=session)
+        return await _fetch_text(session, base, timeout)
+
+
 async def async_get_raw_html(ip_address: str, hass=None) -> str:
     """Return raw HTML from whichever endpoint is working."""
-    timeout = aiohttp.ClientTimeout(total=10)
-
     if hass is not None:
-        session = async_get_clientsession(hass)
-        try:
-            base = await _probe_working_base(ip_address, hass=hass, session=session)
-            try:
-                return await _fetch_text(session, base, timeout)
-            except (aiohttp.ClientError, asyncio.TimeoutError):
-                # Cached base might be stale; clear and reprobe once
-                _BASE_URL_CACHE.pop(_cache_key(ip_address), None)
-                base = await _probe_working_base(ip_address, hass=hass, session=session)
-                return await _fetch_text(session, base, timeout)
-        except ValueError:
-            raise
+        return await _async_fetch_raw_html(ip_address, async_get_clientsession(hass))
 
-    async with aiohttp.ClientSession(timeout=timeout, headers=_DEFAULT_HEADERS) as session:
-        base = await _probe_working_base(ip_address, session=session)
-        try:
-            return await _fetch_text(session, base, timeout)
-        except (aiohttp.ClientError, asyncio.TimeoutError):
-            _BASE_URL_CACHE.pop(_cache_key(ip_address), None)
-            base = await _probe_working_base(ip_address, session=session)
-            return await _fetch_text(session, base, timeout)
+    timeout = aiohttp.ClientTimeout(total=10)
+    async with aiohttp.ClientSession(
+        timeout=timeout, headers=_DEFAULT_HEADERS
+    ) as session:
+        return await _async_fetch_raw_html(ip_address, session)
+
+
+async def async_get_sensor_snapshot(ip_address: str, hass=None):
+    """Return telemetry and metadata HTML from the same HTTP response."""
+    html_data = await async_get_raw_html(ip_address, hass)
+    data = _parse_sensor_data(html_data)
+    for key in TELEMETRY_SENSOR_KEYS.intersection(data):
+        data[key] = as_energy(data[key]) if key in ("ET", "EG") else as_float(data[key])
+    if not any(data.get(key) is not None for key in TELEMETRY_SENSOR_KEYS):
+        raise SolutronicInvalidResponseError(
+            "Endpoint did not return Solutronic telemetry"
+        )
+
+    return data, html_data
 
 
 async def async_get_sensor_data(ip_address: str, hass=None):
     """Fetch and parse inverter telemetry from the discovered working endpoint."""
-    timeout = aiohttp.ClientTimeout(total=10)
-
-    if hass is not None:
-        session = async_get_clientsession(hass)
-        base = await _probe_working_base(ip_address, hass=hass, session=session)
-        try:
-            html_data = await _fetch_text(session, base, timeout)
-        except (aiohttp.ClientError, asyncio.TimeoutError):
-            _BASE_URL_CACHE.pop(_cache_key(ip_address), None)
-            base = await _probe_working_base(ip_address, hass=hass, session=session)
-            html_data = await _fetch_text(session, base, timeout)
-    else:
-        async with aiohttp.ClientSession(timeout=timeout, headers=_DEFAULT_HEADERS) as session:
-            base = await _probe_working_base(ip_address, session=session)
-            try:
-                html_data = await _fetch_text(session, base, timeout)
-            except (aiohttp.ClientError, asyncio.TimeoutError):
-                _BASE_URL_CACHE.pop(_cache_key(ip_address), None)
-                base = await _probe_working_base(ip_address, session=session)
-                html_data = await _fetch_text(session, base, timeout)
-
-    data = _parse_sensor_data(html_data)
-    if not TELEMETRY_SENSOR_KEYS.intersection(data):
-        raise SolutronicInvalidResponseError("Endpoint did not return Solutronic telemetry")
-
+    data, _ = await async_get_sensor_snapshot(ip_address, hass)
     return data

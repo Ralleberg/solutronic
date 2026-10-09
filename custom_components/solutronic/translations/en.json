@@ -8,14 +8,43 @@
         "data": {
           "ip_address": "IP Address"
         }
+      },
+      "search": {
+        "title": "Search for inverter",
+        "description": "Searching the network for Solutronic inverters."
+      },
+      "choose": {
+        "title": "Discovered inverters",
+        "description": "Select an inverter, or choose manual IP entry.",
+        "data": {
+          "ip_address": "Inverter"
+        }
+      },
+      "manual": {
+        "title": "Enter inverter IP",
+        "description": "Enter the IP address of your inverter. Manual setup is also available if automatic discovery does not find it.",
+        "data": {
+          "ip_address": "IP Address"
+        }
+      },
+      "confirm": {
+        "title": "Solutronic inverter discovered",
+        "description": "A Solutronic device was found at {ip_address}. Would you like to add it?"
       }
     },
     "error": {
       "cannot_connect": "Failed to connect to the inverter.",
-      "invalid_host": "Enter a valid IPv4 address for the inverter."
+      "invalid_host": "Enter a valid IPv4 address for the inverter.",
+      "invalid_response": "The inverter responded but returned no valid readings.",
+      "unknown": "An unexpected error occurred. Check the Home Assistant log."
     },
     "abort": {
-      "already_configured": "This inverter is already configured."
+      "already_configured": "This inverter is already configured.",
+      "already_in_progress": "Setup for this inverter is already in progress."
+    },
+    "flow_title": "Solutronic ({ip_address})",
+    "progress": {
+      "searching": "Searching the network for Solutronic inverters."
     }
   },
   "options": {
@@ -26,6 +55,16 @@
         "data": {
           "scan_interval": "Update interval (seconds)"
         }
+      }
+    },
+    "error": {
+      "invalid_interval": "Choose 5, 10 or 30 seconds."
+    }
+  },
+  "selector": {
+    "discovered_inverter": {
+      "options": {
+        "manual": "Enter IP manually"
       }
     }
   }

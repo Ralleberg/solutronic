@@ -8,14 +8,43 @@
         "data": {
           "ip_address": "IP-adresse"
         }
+      },
+      "search": {
+        "title": "Søg efter inverter",
+        "description": "Leder efter Solutronic-invertere på netværket."
+      },
+      "choose": {
+        "title": "Fundne invertere",
+        "description": "Vælg en inverter, eller vælg manuel IP-indtastning.",
+        "data": {
+          "ip_address": "Inverter"
+        }
+      },
+      "manual": {
+        "title": "Indtast inverterens IP",
+        "description": "Indtast IP-adressen på din inverter. Manuel opsætning virker også, hvis automatisk søgning ikke finder den.",
+        "data": {
+          "ip_address": "IP-adresse"
+        }
+      },
+      "confirm": {
+        "title": "Solutronic-inverter fundet",
+        "description": "Der blev fundet en Solutronic-enhed på {ip_address}. Vil du tilføje den?"
       }
     },
     "error": {
       "cannot_connect": "Kunne ikke forbinde til inverteren.",
-      "invalid_host": "Indtast en gyldig IPv4-adresse til inverteren."
+      "invalid_host": "Indtast en gyldig IPv4-adresse til inverteren.",
+      "invalid_response": "Inverteren svarede, men sendte ingen gyldige målinger.",
+      "unknown": "Der opstod en uventet fejl. Se Home Assistant-loggen."
     },
     "abort": {
-      "already_configured": "Denne inverter er allerede konfigureret."
+      "already_configured": "Denne inverter er allerede konfigureret.",
+      "already_in_progress": "Opsætning af denne inverter er allerede i gang."
+    },
+    "flow_title": "Solutronic ({ip_address})",
+    "progress": {
+      "searching": "Leder efter Solutronic-invertere på netværket."
     }
   },
   "options": {
@@ -26,6 +55,16 @@
         "data": {
           "scan_interval": "Opdateringsinterval (sekunder)"
         }
+      }
+    },
+    "error": {
+      "invalid_interval": "Vælg 5, 10 eller 30 sekunder."
+    }
+  },
+  "selector": {
+    "discovered_inverter": {
+      "options": {
+        "manual": "Indtast IP manuelt"
       }
     }
   }

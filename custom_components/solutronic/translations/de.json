@@ -8,14 +8,43 @@
         "data": {
           "ip_address": "IP-Adresse"
         }
+      },
+      "search": {
+        "title": "Wechselrichter suchen",
+        "description": "Das Netzwerk wird nach Solutronic-Wechselrichtern durchsucht."
+      },
+      "choose": {
+        "title": "Gefundene Wechselrichter",
+        "description": "Wähle einen Wechselrichter oder die manuelle IP-Eingabe.",
+        "data": {
+          "ip_address": "Wechselrichter"
+        }
+      },
+      "manual": {
+        "title": "IP-Adresse eingeben",
+        "description": "Gib die IP-Adresse deines Wechselrichters ein. Die manuelle Einrichtung ist auch möglich, wenn die automatische Suche ihn nicht findet.",
+        "data": {
+          "ip_address": "IP-Adresse"
+        }
+      },
+      "confirm": {
+        "title": "Solutronic-Wechselrichter gefunden",
+        "description": "Ein Solutronic-Gerät wurde unter {ip_address} gefunden. Möchtest du es hinzufügen?"
       }
     },
     "error": {
       "cannot_connect": "Verbindung zum Wechselrichter fehlgeschlagen.",
-      "invalid_host": "Gib eine gültige IPv4-Adresse für den Wechselrichter ein."
+      "invalid_host": "Gib eine gültige IPv4-Adresse für den Wechselrichter ein.",
+      "invalid_response": "Der Wechselrichter hat geantwortet, aber keine gültigen Messwerte geliefert.",
+      "unknown": "Ein unerwarteter Fehler ist aufgetreten. Prüfe das Home Assistant-Protokoll."
     },
     "abort": {
-      "already_configured": "Dieser Wechselrichter ist bereits konfiguriert."
+      "already_configured": "Dieser Wechselrichter ist bereits konfiguriert.",
+      "already_in_progress": "Die Einrichtung dieses Wechselrichters läuft bereits."
+    },
+    "flow_title": "Solutronic ({ip_address})",
+    "progress": {
+      "searching": "Das Netzwerk wird nach Solutronic-Wechselrichtern durchsucht."
     }
   },
   "options": {
@@ -26,6 +55,16 @@
         "data": {
           "scan_interval": "Aktualisierungsintervall (Sekunden)"
         }
+      }
+    },
+    "error": {
+      "invalid_interval": "Wähle 5, 10 oder 30 Sekunden."
+    }
+  },
+  "selector": {
+    "discovered_inverter": {
+      "options": {
+        "manual": "IP manuell eingeben"
       }
     }
   }

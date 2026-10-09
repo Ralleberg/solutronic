@@ -1,1 +1,9 @@
 .DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+.ruff_cache/
+.pytest_cache/
+
+# Local release draft; excluded from the GitHub repository.
+/RELEASE_NOTES.local.md
