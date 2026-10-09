@@ -19,9 +19,13 @@ options reloads, scheduled saves and shutdown writes, endpoint retry behavior,
 invalid numeric readings, incomplete phase data, redacted diagnostics, config
 flow error handling, both existing HTML parsers, UDP reply validation, enabled
 interface selection, discovery cancellation/socket cleanup, startup scheduling,
-manual fallback, and discovery confirmation/HTTP validation. The legacy HTML is
-a synthetic regression fixture, not evidence of compatibility with additional
-inverter models. Discovery still needs a real-inverter smoke test.
+manual fallback, and discovery confirmation/HTTP validation. The English legacy
+HTML is a synthetic fixture. The German SOLPLUS 55 / firmware 2.65 fixture is the
+complete HTML supplied in [issue #6](https://github.com/Ralleberg/solutronic/issues/6),
+preserving its spacing, HTML entities, and malformed markup. See
+[fixtures/README.md](fixtures/README.md) for provenance and expected readings.
+Parser tests do not replace physical-inverter verification. Discovery still
+needs a real-inverter smoke test.
 
 Device-removal tests use HA's real device and entity registries in temporary
 directories. They verify that user-approved legacy-device deletion removes only

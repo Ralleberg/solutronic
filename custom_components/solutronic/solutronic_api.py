@@ -184,6 +184,11 @@ def _parse_basic_menu_sensor_data(html_data: str) -> dict:
         "energy total": "EG",
         "efficiency": "ETA",
         "maximum power today": "MAXP",
+        "Leistung AC": "PAC",
+        "Netzspannung": "UACL1",
+        "Gleichspannung": "UDC1",
+        "Energie Tag": "ET",
+        "Energie gesamt": "EG",
     }
 
     for label, key in label_map.items():
@@ -191,7 +196,9 @@ def _parse_basic_menu_sensor_data(html_data: str) -> dict:
         if value is not None:
             data[key] = value
 
-    if "PAC" in data:
+    # Keep the historical L1 alias for English legacy pages. The German sample
+    # reports AC power without a phase, so do not invent a phase-specific reading.
+    if "PAC" in data and _extract_labeled_number(text, "power AC") is not None:
         data.setdefault("PACL1", data["PAC"])
 
     serial_match = re.search(r"S/N\s+(\d+)", text, re.IGNORECASE)

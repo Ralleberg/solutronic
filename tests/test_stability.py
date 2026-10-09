@@ -43,6 +43,17 @@ power AC: 1250 W<br>mains voltage: 230 V<br>mains current: 5,4 A<br>
 DC voltage: 300 V<br>DC-current: 4,5 A<br>energy today: 2,5 kWh<br>
 energy total: 1000 kWh<br>efficiency: 92 %<br>maximum power today: 1500 W
 </p>"""
+ISSUE_6_HTML = (
+    Path(__file__).parent / "fixtures" / "issue_6_solplus_55_fw_2_65_de.html"
+).read_text(encoding="utf-8")
+ISSUE_6_VALUES = {
+    "PAC": 313,
+    "UACL1": 234,
+    "UDC1": 385,
+    "ET": 2.102,
+    "EG": 103023,
+    "SN": "22031",
+}
 
 
 class StabilityTests(unittest.IsolatedAsyncioTestCase):
@@ -402,6 +413,121 @@ class StabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["PAC_TOTAL"], 1250)
         self.assertEqual(self.coordinator.device_model, "SOLPLUS 25")
         self.assertEqual(self.coordinator.device_firmware, "2.53")
+
+    async def test_issue_6_german_legacy_html_returns_only_supplied_readings(self):
+        with patch.object(api, "async_get_raw_html", return_value=ISSUE_6_HTML):
+            data, html = await api.async_get_sensor_snapshot("192.0.2.1", self.hass)
+        self.assertEqual(html, ISSUE_6_HTML)
+        self.assertEqual(data, ISSUE_6_VALUES)
+
+    async def test_issue_6_german_legacy_header_metadata(self):
+        await self.poll(ISSUE_6_VALUES, html=ISSUE_6_HTML)
+        self.assertEqual(self.coordinator.device_manufacturer, "Solutronic")
+        self.assertEqual(self.coordinator.device_model, "SOLPLUS 55")
+        self.assertEqual(self.coordinator.device_serial, "22031")
+        self.assertEqual(self.coordinator.device_firmware, "2.65")
+        self.assertEqual(self.entry.data["model"], "SOLPLUS 55")
+        self.assertEqual(self.entry.data["serial"], "22031")
+        self.assertEqual(self.entry.data["firmware"], "2.65")
+
+    async def test_issue_6_setup_validates_the_supplied_html(self):
+        flow = self.make_flow()
+        with patch.object(api, "async_get_raw_html", return_value=ISSUE_6_HTML):
+            result = await flow.async_step_user({"ip_address": "192.0.2.1"})
+        self.assertEqual(result["data"], {"ip_address": "192.0.2.1"})
+        flow.async_set_unique_id.assert_awaited_once_with("192.0.2.1")
+
+    async def test_issue_6_missing_fields_are_not_invented(self):
+        for label, key in (
+            ("Leistung AC", "PAC"),
+            ("Netzspannung", "UACL1"),
+            ("Gleichspannung", "UDC1"),
+            ("Energie Tag", "ET"),
+            ("Energie gesamt", "EG"),
+        ):
+            with self.subTest(key=key):
+                html = ISSUE_6_HTML.replace(label + ":", "Not reported:")
+                with patch.object(api, "async_get_raw_html", return_value=html):
+                    data = await api.async_get_sensor_data("192.0.2.1", self.hass)
+                self.assertEqual(
+                    data,
+                    {
+                        name: value
+                        for name, value in ISSUE_6_VALUES.items()
+                        if name != key
+                    },
+                )
+
+    async def test_issue_6_german_decimal_comma_and_case_variants(self):
+        html = ISSUE_6_HTML.replace("2.102", "2,102")
+        html = html.replace("Leistung AC:", "LEISTUNG AC:")
+        with patch.object(api, "async_get_raw_html", return_value=html):
+            data = await api.async_get_sensor_data("192.0.2.1", self.hass)
+        self.assertEqual(data, ISSUE_6_VALUES)
+
+    async def test_existing_english_legacy_readings_are_unchanged(self):
+        self.assertEqual(
+            api._parse_sensor_data(LEGACY_HTML),
+            {
+                "PAC": 1250,
+                "PACL1": 1250,
+                "UACL1": 230,
+                "IAC1": 5.4,
+                "UDC1": 300,
+                "IDC1": 4.5,
+                "ET": 2.5,
+                "EG": 1000,
+                "ETA": 92,
+                "MAXP": 1500,
+                "SN": "2091",
+            },
+        )
+
+    async def test_issue_6_full_poll_entities_and_energy_survive_restart(self):
+        with patch.object(
+            api, "async_get_raw_html", return_value=ISSUE_6_HTML
+        ) as fetch:
+            self.coordinator.data = await self.coordinator._async_update_data()
+        fetch.assert_awaited_once_with("192.0.2.1", self.hass)
+        self.assertEqual(self.coordinator.consecutive_failures, 0)
+        self.assertEqual(self.coordinator.data["PAC_TOTAL"], 313)
+        self.assertEqual(self.coordinator.data["LIFETIME_DERIVED"], 103023)
+        self.assertEqual(self.coordinator.data["ET"], 2.102)
+        self.hass.data[DOMAIN] = {self.entry.entry_id: self.coordinator}
+        entities = []
+        await async_setup_entry(self.hass, self.entry, entities.extend)
+        self.assertEqual(
+            {entity.unique_id for entity in entities},
+            {
+                f"existing_entry_{key}"
+                for key in (
+                    "PAC_TOTAL",
+                    "UACL1",
+                    "UDC1",
+                    "ET",
+                    "EG",
+                    "LIFETIME_DERIVED",
+                )
+            },
+        )
+        for entity in entities:
+            self.assertEqual(
+                entity.device_info["identifiers"], {(DOMAIN, "existing_entry")}
+            )
+        await self.coordinator.async_save_state()
+        restarted = self.make_coordinator()
+        try:
+            await restarted.async_restore_state()
+            next_html = ISSUE_6_HTML.replace(
+                "Energie Tag:  2.102", "Energie Tag:  2.202"
+            )
+            with patch.object(api, "async_get_raw_html", return_value=next_html):
+                restarted.data = await restarted._async_update_data()
+            self.assertEqual(restarted.data["LIFETIME_DERIVED"], 103023.1)
+            self.assertEqual(restarted.data["EG"], 103023)
+        finally:
+            await restarted.async_save_state()
+            await restarted.async_shutdown()
 
     async def test_partial_phase_data_does_not_publish_incomplete_total(self):
         await self.poll({"PACL1": 100, "PACL2": 200, "PACL3": 300, "ET": 5, "EG": 1000})

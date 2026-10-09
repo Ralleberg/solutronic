@@ -221,14 +221,24 @@ firmware and page format, as well as the model name.
 | Model | Compatibility notes |
 | --- | --- |
 | SOLPLUS 100 | Primary supported model |
+| SOLPLUS 55, firmware 2.65 | German basic-menu HTML tested with the complete user-supplied sample from [issue #6](https://github.com/Ralleberg/solutronic/issues/6); physical hardware verification pending |
 | SOLPLUS 50 / 35 | Requires a supported web layout; hardware compatibility was not verified by this update |
 | SOLPLUS 25 | Legacy HTML parsing is available, including the firmware 2.53 layout; compatibility with other firmware requires verification |
 
-This update focuses on discovery and reliability. It does not establish support
-for additional inverter models or resolve the separately reported older-model
-compatibility issue. Automated legacy-parser tests use a synthetic HTML fixture;
-they are not a substitute for testing a physical inverter. UDP discovery also
-still needs validation on physical hardware.
+The German legacy page from issue #6 supplies AC power, grid voltage, DC voltage,
+daily energy, and lifetime energy. Its `FW-Release` header also supplies model,
+serial number, and firmware. Missing currents, efficiency, maximum power, and
+phase-specific measurements are not inferred. Existing English legacy pages and
+newer telemetry tables remain supported.
+
+**RS485 scope:** the supplied page shows one inverter identity and one set of
+readings. This parser fix does not expose individual SOLPLUS 50/35 slaves or
+establish whether the displayed values include other inverters. Per-slave pages
+and their selection paths or parameters are needed before adding that support.
+
+German legacy parsing is verified against the user's HTML, including its original
+malformed table markup. The English legacy fixture is synthetic. Neither replaces
+physical-inverter verification; UDP discovery also still needs hardware testing.
 
 ## Troubleshooting
 
@@ -291,7 +301,7 @@ mocked; storage tests use temporary directories.
 Tests also cover manual legacy-device removal using Home Assistant's real device
 and entity registries, including protection of current and disabled entities.
 
-The 73-test suite has passed locally on Home Assistant **2024.1.6**, **2024.6.4**,
+The 80-test suite has passed locally on Home Assistant **2024.1.6**, **2024.6.4**,
 and **2026.10.0**. GitHub Actions is configured to run the same compatibility
 matrix, along with Ruff lint and formatting checks. See
 [tests/README.md](tests/README.md) for commands and dependency details, and
