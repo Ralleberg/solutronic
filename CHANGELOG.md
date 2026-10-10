@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.0.2
+
+- Fix `UnicodeDecodeError` before HTML parsing when older firmware sends Western
+  European bytes without a usable charset. Preserve normal HTTP charset and
+  UTF-8 decoding; on decode failure, reuse the response body with Windows-1252
+  and ISO-8859-1 fallbacks without another request or dropped bytes.
+- Add HTTP byte-replay tests for issue #6 setup, polling, German readings,
+  existing English legacy pages and newer tables. Preserve sensor identity and
+  saved energy state. Verified with an encoded version of the supplied HTML and
+  the reported traceback; physical verification on Pocket74's setup is pending.
+- Individual RS485 slave support remains outside this patch. The new captures
+  contain binary port-33330 traffic, not HTTP pages or HTML measurement mappings.
+
 ## 2.0.1
 
 - Parse German legacy SOLPLUS labels and the spaced `FW-Release` metadata header

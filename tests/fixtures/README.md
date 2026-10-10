@@ -28,3 +28,20 @@ Tests cover parsing, setup validation, coordinator metadata, the exact sensor
 set and identity, and persisted energy state across restart. HTML-fixture
 verification has not yet been confirmed on physical hardware. Individual RS485
 slave support requires additional page samples and access details.
+
+## Issue #6 follow-up: HTTP character decoding
+
+Pocket74's [10 October 2026 comment](https://github.com/Ralleberg/solutronic/issues/6#issuecomment-6096096884)
+reports `UnicodeDecodeError` for byte `0xfc` in `aiohttp.ClientResponse.text()`,
+before the integration's HTML parser runs. `test_http_encoding.py` encodes the
+original fixture as ISO-8859-1 and Windows-1252 and serves those bytes over local
+HTTP. This recreates the failing decoding path while preserving the known readings.
+The raw HTTP headers and body from the affected inverter have not been supplied;
+the replay is a constructed regression case, not a captured response.
+
+All seven attached PktMon text exports were inspected, including their hex packet
+bytes. Their IPv4 TCP traffic uses port 33330, with no port-80/8888 HTTP exchange
+or HTTP/HTML payloads. They contain binary protocol exchanges and cannot establish
+the HTTP charset, slave page selection, or the meaning of individual measurement
+fields. No protocol writes, slave commands, or guessed measurement mappings are
+implemented. Raw captures are not included in this repository.

@@ -30,11 +30,12 @@ solar production, AC and DC measurements, and device information directly from
 the inverter's built-in web interface, with production sensors ready for the
 Home Assistant Energy Dashboard.
 
-**v2.0.1** fixes German legacy HTML parsing for the supplied SOLPLUS 55 / firmware
-2.65 page. Verified against the user's HTML; physical hardware verification is
-pending. It retains the automatic discovery, saved energy-counter state,
-diagnostics, and obsolete-device removal introduced in v2.0.0. See the
-[v2.0.1 changelog](CHANGELOG.md#201) for details. The release badge above follows
+**v2.0.2** fixes an HTTP character-decoding failure reported after the German
+legacy parser update: older firmware can send Western European HTML bytes without
+a usable charset. Verified by replaying the user's HTML as legacy-encoded HTTP
+responses; physical verification on the affected setup is pending. It retains
+the v2.0.0 reliability improvements and v2.0.1 German label support. See the
+[v2.0.2 changelog](CHANGELOG.md#202) for details. The release badge above follows
 the latest published GitHub release.
 
 [Installation](#installation) · [Configuration](#configuration) ·
@@ -106,7 +107,7 @@ for details.
 Update through HACS, or replace the integration folder for a manual installation,
 then restart Home Assistant. Keep the existing integration entry.
 
-Version **2.0.1** preserves config entry versions, sensor unique IDs, names, units,
+Version **2.0.2** preserves config entry versions, sensor unique IDs, names, units,
 state classes, and polling options. The derived energy counter is initialized
 from the inverter's lifetime reading on its first start without saved state,
 matching the previous behavior. Once saved, its state is restored on later starts.
@@ -297,13 +298,14 @@ information first.
 
 The regression suite covers energy storage and restarts, outages, partial
 responses, sensor identity, options, HTTP endpoint handling, both HTML parsers,
-and UDP discovery and config-flow behavior. Network responses and sockets are
-mocked; storage tests use temporary directories.
+and UDP discovery and config-flow behavior. Most network responses and UDP
+sockets are mocked; HTTP byte-replay tests use a local loopback server and real
+aiohttp decoding. Storage tests use temporary directories. No inverter is contacted.
 
 Tests also cover manual legacy-device removal using Home Assistant's real device
 and entity registries, including protection of current and disabled entities.
 
-The 80-test suite has passed locally on Home Assistant **2024.1.6**, **2024.6.4**,
+The 92-test suite has passed locally on Home Assistant **2024.1.6**, **2024.6.4**,
 and **2026.10.0**. GitHub Actions is configured to run the same compatibility
 matrix, along with Ruff lint and formatting checks. See
 [tests/README.md](tests/README.md) for commands and dependency details, and
