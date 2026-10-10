@@ -105,7 +105,19 @@ async def _fetch_text(session, url: str, timeout: aiohttp.ClientTimeout) -> str:
     """Fetch text from a URL and fail on non-successful HTTP statuses."""
     async with session.get(url, timeout=timeout, headers=_DEFAULT_HEADERS) as response:
         response.raise_for_status()
-        return await response.text()
+        try:
+            return await response.text()
+        except UnicodeDecodeError:
+            # Older German firmware sends Western European bytes without a usable
+            # charset. Keep aiohttp's normal decoding first, then decode the cached
+            # body without dropping bytes or making another HTTP request.
+            body = await response.read()
+            _LOGGER.debug("Using legacy character decoding for inverter HTML")
+            try:
+                return body.decode("windows-1252")
+            except UnicodeDecodeError:
+                # ISO-8859-1 also defines the control bytes absent from CP1252.
+                return body.decode("iso-8859-1")
 
 
 def _parse_sensor_data(html_data: str) -> dict:

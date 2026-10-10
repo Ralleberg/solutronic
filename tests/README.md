@@ -8,10 +8,13 @@ python -m unittest discover -s tests -v
 ```
 
 The suite uses real Home Assistant coordinator, sensor, options-flow and storage
-helpers. Inverter HTTP responses and config-entry manager calls are mocked.
+helpers. Config-entry manager calls and most inverter HTTP responses are mocked.
+`test_http_encoding.py` serves controlled response bytes from a local loopback HTTP
+server to exercise real aiohttp decoding, setup validation, and cached polling.
 UDP sockets and network adapters are mocked, including the manufacturer's
 documented discovery response. All storage writes use temporary directories;
-no running HA installation, local network or physical inverter is accessed.
+no running HA installation or physical inverter is accessed. HTTP replay uses
+only `127.0.0.1`; no LAN devices are contacted.
 
 Coverage includes saved-counter upgrades and restarts, daily resets, missing
 telemetry, outages, entity IDs and capability retention, metadata updates,
@@ -24,6 +27,10 @@ HTML is a synthetic fixture. The German SOLPLUS 55 / firmware 2.65 fixture is th
 complete HTML supplied in [issue #6](https://github.com/Ralleberg/solutronic/issues/6),
 preserving its spacing, HTML entities, and malformed markup. See
 [fixtures/README.md](fixtures/README.md) for provenance and expected readings.
+The encoding tests generate ISO-8859-1/Windows-1252 bytes from the existing
+issue HTML; these are not captured HTTP responses. The reported traceback is
+reproduced before the fix and covered after it. UTF-8, explicit charsets, HTTP
+errors, unsupported pages, English legacy pages, and modern tables are covered.
 Parser tests do not replace physical-inverter verification. Discovery still
 needs a real-inverter smoke test.
 
