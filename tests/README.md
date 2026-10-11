@@ -1,5 +1,10 @@
 # Regression tests
 
+This directory is for development and GitHub checks. Keep the tests and fixtures
+in version control so fixes remain reproducible. HACS installs the integration
+from `custom_components/solutronic`; it does not install this test directory.
+Local caches and generated coverage reports are excluded by `.gitignore`.
+
 Run these tests in an isolated Python environment with Home Assistant and
 Beautiful Soup installed, using a Python version supported by that HA release:
 

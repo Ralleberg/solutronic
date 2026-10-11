@@ -1,9 +1,18 @@
+# Local macOS metadata.
 .DS_Store
+
+# Generated Python files, local environments, and tool caches.
 __pycache__/
 *.py[cod]
 .venv/
 .ruff_cache/
 .pytest_cache/
+.mypy_cache/
+
+# Generated coverage reports; keep test source and fixtures in Git.
+.coverage
+.coverage.*
+htmlcov/
 
 # Local release draft; excluded from the GitHub repository.
 /RELEASE_NOTES.local.md
