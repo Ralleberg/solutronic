@@ -33,8 +33,11 @@ Home Assistant Energy Dashboard.
 **v2.0.2** fixes an HTTP character-decoding failure reported after the German
 legacy parser update: older firmware can send Western European HTML bytes without
 a usable charset. Verified by replaying the user's HTML as legacy-encoded HTTP
-responses; physical verification on the affected setup is pending. It retains
-the v2.0.0 reliability improvements and v2.0.1 German label support. See the
+responses. A user confirmed successful operation on a SOLPLUS 35 with firmware
+2.64 after updating to v2.0.2 ([issue #8](https://github.com/Ralleberg/solutronic/issues/8)).
+Successful operation of this integration on the SOLPLUS 55 setup in issue #6
+has not yet been confirmed. It retains the v2.0.0 reliability improvements and
+v2.0.1 German label support. See the
 [v2.0.2 changelog](CHANGELOG.md#202) for details. The release badge above follows
 the latest published GitHub release.
 
@@ -224,8 +227,9 @@ firmware and page format, as well as the model name.
 | Model | Compatibility notes |
 | --- | --- |
 | SOLPLUS 100 | Primary supported model |
-| SOLPLUS 55, firmware 2.65 | German basic-menu HTML tested with the complete user-supplied sample from [issue #6](https://github.com/Ralleberg/solutronic/issues/6); physical hardware verification pending |
-| SOLPLUS 50 / 35 | Requires a supported web layout; hardware compatibility was not verified by this update |
+| SOLPLUS 55, firmware 2.65 | Parser tested against the supplied German basic-menu HTML from [issue #6](https://github.com/Ralleberg/solutronic/issues/6). Successful operation of the integration on that inverter has not yet been confirmed; issue remains open. |
+| SOLPLUS 35, firmware 2.64 | User-confirmed working after updating to v2.0.2; see [issue #8](https://github.com/Ralleberg/solutronic/issues/8#issuecomment-6106519958). Confirmation applies to this user's setup; individual measurements were not separately verified. |
+| SOLPLUS 50 | Requires a supported web layout; operation of this integration on hardware has not yet been confirmed. |
 | SOLPLUS 25 | Legacy HTML parsing is available, including the firmware 2.53 layout; compatibility with other firmware requires verification |
 
 The German legacy page from issue #6 supplies AC power, grid voltage, DC voltage,
@@ -235,13 +239,18 @@ phase-specific measurements are not inferred. Existing English legacy pages and
 newer telemetry tables remain supported.
 
 **RS485 scope:** the supplied page shows one inverter identity and one set of
-readings. This parser fix does not expose individual SOLPLUS 50/35 slaves or
-establish whether the displayed values include other inverters. Per-slave pages
-and their selection paths or parameters are needed before adding that support.
+readings. The current integration does not expose individual slaves through an
+RS485 master or implement TCP telemetry polling. The SOLPLUS 35 confirmation in
+issue #8 does not verify slave support. Protocol findings shared in issue #6 are
+a basis for further development, not confirmation that this integration supports
+that multi-inverter setup.
 
-German legacy parsing is verified against the user's HTML, including its original
-malformed table markup. The English legacy fixture is synthetic. Neither replaces
-physical-inverter verification; UDP discovery also still needs hardware testing.
+German legacy parsing is verified against the supplied HTML, including its
+original malformed table markup. The English legacy fixture is synthetic. These
+parser tests are separate from the user-confirmed SOLPLUS 35 operation in issue #8
+and do not establish successful operation on the SOLPLUS 55 setup in issue #6.
+UDP discovery was reported to find the SOLPLUS 35 in issue #8; discovery support
+on other models and firmware still requires verification.
 
 ## Troubleshooting
 
