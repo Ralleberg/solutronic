@@ -33,11 +33,11 @@
       },
       "tcp_gateway": {
         "title": "Master/slave connection (test feature)",
-        "description": "Connect through the master using the gateway protocol. This is a test feature based on a user-tested setup. The preparation commands are not documented by the manufacturer. Enter one device per line as address,serial,model,firmware; model and firmware are optional. The bus address can differ from the serial number. Existing HTTP entries are kept separate.",
+        "description": "Leave the device list empty to read the master’s slave list automatically. A manual list is available as a fallback. Bus addresses are not necessarily serial numbers. This test connection still needs verification on your setup.",
         "data": {
           "ip_address": "Master IP address",
           "master_address": "Master bus address",
-          "devices": "Inverters (one per line)",
+          "devices": "Device list (optional manual fallback)",
           "accept_experimental": "I want to test this experimental connection on my setup"
         }
       }
@@ -65,7 +65,8 @@
         "title": "Solutronic Settings",
         "description": "Adjust polling interval.",
         "data": {
-          "scan_interval": "Update interval (seconds)"
+          "scan_interval": "Update interval (seconds)",
+          "discover_devices": "Find inverters automatically through the master"
         }
       }
     },

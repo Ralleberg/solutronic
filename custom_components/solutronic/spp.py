@@ -1,7 +1,8 @@
 """Experimental SPP gateway transport based on issue #6's supplied frames.
 
 No network requests are made unless this client is explicitly configured. The
-meaning of the fixed initialization commands is not documented by the manufacturer.
+preparation sequence is replayed from the user’s setup; hardware compatibility
+with the manufacturer’s older protocol specification still needs confirmation.
 """
 
 import asyncio
@@ -20,7 +21,7 @@ class GatewayDevice:
     """Bus address and user-confirmed identity; never infer one from the other."""
 
     address: int
-    serial: str
+    serial: str | None
     model: str = "SOLPLUS"
     firmware: str = "Unknown"
 
@@ -44,8 +45,8 @@ def parse_devices(value):
                 address, fields[1], *(part or "Unknown" for part in fields[2:])
             )
         )
-    if not 1 <= len(devices) <= 16:
-        raise ValueError("Configure between 1 and 16 devices")
+    if not 1 <= len(devices) <= 33:
+        raise ValueError("Configure a master and up to 32 slaves")
     if len({d.address for d in devices}) != len(devices) or len(
         {d.serial for d in devices}
     ) != len(devices):
@@ -64,7 +65,10 @@ def build_request(address, command, data=b"\x00\x00\x00\x00"):
     """Only construct the fixed sequence observed in the supplied implementation."""
     if (
         not 1 <= address <= 65535
-        or command not in (0x4094, 0x8104, 0x4105, 0x410E)
+        or (
+            command not in (0x4094, 0x8104, 0x4105, 0x410E)
+            and not 0x40A5 <= command <= 0x40C4
+        )
         or data not in (b"\x00\x00\x00\x00", b"\x00\x00\x00\x1f")
         or (data[-1] == 0x1F and command != 0x8104)
     ):
@@ -145,7 +149,9 @@ class SppClient:
         if header[0] != 2:
             raise SppError("Invalid SPP frame start")
         command = int.from_bytes(header[5:7], "big")
-        if command not in (0x0094, 0x0104, 0x0105, 0x090E):
+        if command not in (0x0094, 0x0104, 0x0105, 0x090E) and not (
+            165 <= command <= 196 or 0x10A5 <= command <= 0x10C4
+        ):
             raise SppError("Unknown SPP response")
         length = 137 if command == 0x090E else 13
         frame = header + await reader.readexactly(length - 7)
@@ -166,7 +172,15 @@ class SppClient:
             for _ in range(8):
                 frame = await self._read_frame(reader)
                 source, response_command = validate_frame(frame)
-                if source != address or response_command != expected[command]:
+                if (
+                    source == address
+                    and response_command
+                    == expected.get(command, command & 0x3FF) | 0x1000
+                ):
+                    raise SppError("Gateway rejected the parameter read")
+                if source != address or response_command != expected.get(
+                    command, command & 0x3FF
+                ):
                     continue
                 if command == 0x8104 and frame[7:11] != data:
                     continue
@@ -210,6 +224,34 @@ class SppClient:
                 # leftovers from a timed-out transaction become another reading.
                 await self.async_close()
         return None
+
+    async def async_discover(self):
+        """Read configured slave addresses (B12 sections 2.7/3.4), never write them."""
+        addresses = [self.master]
+        async with self._lock:
+            try:
+                async with asyncio.timeout(15):
+                    await self._connect()
+                    for parameter in range(165, 197):
+                        frame = await self._request(self.master, 0x4000 | parameter)
+                        address = int.from_bytes(frame[7:11], "big")
+                        if address == 0:
+                            break
+                        if not 1 <= address <= 65535 or address in addresses:
+                            raise SppError("Invalid or duplicate slave address")
+                        addresses.append(address)
+            except (
+                OSError,
+                asyncio.TimeoutError,
+                asyncio.IncompleteReadError,
+                SppError,
+            ):
+                await self.async_close()
+                raise
+            except asyncio.CancelledError:
+                await self.async_close()
+                raise
+        return addresses
 
     async def async_poll(self):
         result = {}

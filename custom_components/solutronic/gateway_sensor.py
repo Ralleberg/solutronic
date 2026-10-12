@@ -31,13 +31,25 @@ GATEWAY_SENSORS.update(
 
 async def async_setup_gateway_sensors(hass, entry, async_add_entities):
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(
-        [
-            GatewaySensor(coordinator, entry.entry_id, device, key, *attributes)
-            for device in coordinator.devices
-            for key, attributes in GATEWAY_SENSORS.items()
+    registered = set()
+
+    def add_devices():
+        added = [
+            device for device in coordinator.devices if device.address not in registered
         ]
-    )
+        registered.update(device.address for device in added)
+        if not added:
+            return
+        async_add_entities(
+            [
+                GatewaySensor(coordinator, entry.entry_id, device, key, *attributes)
+                for device in added
+                for key, attributes in GATEWAY_SENSORS.items()
+            ]
+        )
+
+    add_devices()
+    entry.async_on_unload(coordinator.async_add_listener(add_devices))
 
 
 class GatewaySensor(SolutronicSensor):
@@ -65,7 +77,7 @@ class GatewaySensor(SolutronicSensor):
     def device_info(self):
         return {
             "identifiers": {(DOMAIN, self._entry_id)},
-            "name": f"Solutronic {self._device.serial}",
+            "name": f"Solutronic {self._device.serial or self._device.address}",
             "manufacturer": "Solutronic",
             "model": self._device.model,
             "sw_version": self._device.firmware,

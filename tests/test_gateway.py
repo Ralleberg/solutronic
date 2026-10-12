@@ -414,6 +414,85 @@ class GatewayTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(await async_unload_entry(self.hass, self.entry))
             close.assert_awaited_once()
 
+    async def test_empty_list_discovers_devices_during_setup(self):
+        flow = self.flow()
+        with (
+            patch.object(
+                spp.SppClient, "async_discover", return_value=list(FRAMES)
+            ) as discover,
+            patch.object(spp.SppClient, "async_poll", return_value=VALUES),
+        ):
+            result = await flow.async_step_tcp_gateway(
+                {
+                    "ip_address": "192.0.2.1",
+                    "master_address": 22031,
+                    "accept_experimental": True,
+                }
+            )
+        self.assertTrue(result["data"]["auto_discover"])
+        self.assertEqual(len(result["data"]["devices"]), 6)
+        self.assertIsNone(result["data"]["devices"][-1]["serial"])
+        discover.assert_awaited_once()
+
+    async def test_failed_discovery_does_not_create_a_guessed_device_list(self):
+        with (
+            patch.object(spp.SppClient, "async_discover", side_effect=spp.SppError()),
+            patch.object(spp.SppClient, "async_poll") as poll,
+        ):
+            result = await self.flow().async_step_tcp_gateway(
+                {
+                    "ip_address": "192.0.2.1",
+                    "master_address": 22031,
+                    "accept_experimental": True,
+                }
+            )
+        self.assertEqual(result["errors"]["base"], "cannot_connect")
+        poll.assert_not_called()
+
+    async def test_dynamic_addition_creates_sensors_without_replacing_existing_ids(
+        self,
+    ):
+        self.coordinator.auto_discover = True
+        self.hass.data[DOMAIN] = {self.entry.entry_id: self.coordinator}
+        add = Mock()
+        await setup_sensors(self.hass, self.entry, add)
+        old_ids = {sensor.unique_id for sensor in add.call_args.args[0]}
+        readings = dict(VALUES)
+        readings[40000] = dict(VALUES[22031])
+        with (
+            patch.object(
+                self.coordinator.client, "async_discover", return_value=list(readings)
+            ),
+            patch.object(self.coordinator.client, "async_poll", return_value=readings),
+        ):
+            values = await self.coordinator._async_update_data()
+            self.coordinator.async_set_updated_data(values)
+        added = add.call_args.args[0]
+        self.assertEqual(len(added), 8)
+        self.assertFalse(old_ids & {sensor.unique_id for sensor in added})
+        alias = next(
+            device for device in self.coordinator.devices if device.address == 30535
+        )
+        self.assertEqual(alias.serial, "30537")
+        self.assertEqual(self.coordinator.client.addresses, tuple(readings))
+
+    async def test_discovery_failure_keeps_last_known_devices_and_energy(self):
+        self.coordinator.auto_discover = True
+        with patch.object(
+            self.coordinator.client, "async_discover", side_effect=spp.SppError()
+        ):
+            values = await self.poll(VALUES)
+        self.assertEqual(len(values), 6)
+        self.assertEqual(self.coordinator.discovery_error, "discovery_failed")
+
+    async def test_beta_one_entry_can_enable_discovery_without_changing_identity(self):
+        flow = SolutronicInverterOptionsFlow(self.entry)
+        result = await flow.async_step_init(
+            {"scan_interval": 60, "discover_devices": True}
+        )
+        self.assertTrue(result["data"]["discover_devices"])
+        self.assertEqual(self.entry.entry_id, "gateway_entry")
+
 
 class SppTransportTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -421,6 +500,8 @@ class SppTransportTests(unittest.IsolatedAsyncioTestCase):
         self.connections = 0
         self.stale = False
         self.corrupt_once = False
+        self.discovery_addresses = list(FRAMES)[1:]
+        self.discovery_error = False
         self.tasks = set()
         self.server = await asyncio.start_server(self.serve, "127.0.0.1", 0)
         self.client = spp.SppClient(
@@ -450,6 +531,19 @@ class SppTransportTests(unittest.IsolatedAsyncioTestCase):
                     reply = bytes.fromhex("02 00 00 56 0f 00 94 00 00 56 0f 94 03")
                 elif command == 0x8104:
                     reply = response(address, 0x0104, raw[7:11])
+                elif 0x40A5 <= command <= 0x40C4:
+                    parameter = command & 0x3FF
+                    index = parameter - 165
+                    value = (
+                        self.discovery_addresses[index]
+                        if index < len(self.discovery_addresses)
+                        else 0
+                    )
+                    reply = response(address, parameter, value.to_bytes(4, "big"))
+                    if self.discovery_error:
+                        reply = response(
+                            address, parameter | 0x1000, (1).to_bytes(4, "big")
+                        )
                 elif command == 0x4105:
                     reply = response(address, 0x0105, b"\x00\x00\x00\x14")
                 else:
@@ -544,4 +638,35 @@ class SppTransportTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result[22031], VALUES[22031])
         self.assertEqual(
             [call.args[0] for call in pause.await_args_list], [0.05, 0.30, 0.04]
+        )
+
+    async def test_documented_slave_list_is_dynamic_and_stops_at_zero(self):
+        for count in (0, 1, 5, 32):
+            self.discovery_addresses = list(range(30000, 30000 + count))
+            before = len(self.requests)
+            addresses = await self.client.async_discover()
+            self.assertEqual(addresses, [22031] + self.discovery_addresses)
+            reads = [
+                int.from_bytes(raw[5:7], "big")
+                for raw in self.requests[before:]
+                if raw[5:7] != b"\x40\x94"
+            ]
+            self.assertEqual(reads, list(range(0x40A5, 0x40A5 + min(count + 1, 32))))
+            self.assertTrue(
+                all(raw[7:11] == bytes(4) for raw in self.requests[before:])
+            )
+
+    async def test_duplicate_and_invalid_slave_addresses_are_rejected(self):
+        for addresses in ([22031], [30000, 30000], [65536]):
+            self.discovery_addresses = addresses
+            with self.assertRaises(spp.SppError):
+                await self.client.async_discover()
+            self.assertIsNone(self.client._writer)
+
+    async def test_discovery_error_response_is_rejected_without_address_scanning(self):
+        self.discovery_error = True
+        with self.assertRaises(spp.SppError):
+            await self.client.async_discover()
+        self.assertEqual(
+            [int.from_bytes(raw[5:7], "big") for raw in self.requests], [0x4094, 0x40A5]
         )

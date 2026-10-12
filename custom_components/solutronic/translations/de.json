@@ -33,11 +33,11 @@
       },
       "tcp_gateway": {
         "title": "Master/Slave-Verbindung (Testfunktion)",
-        "description": "Verbindung über den Master. Diese Testfunktion basiert auf einem vom Nutzer getesteten Aufbau. Die Vorbereitungskommandos sind vom Hersteller nicht dokumentiert. Ein Wechselrichter pro Zeile: Adresse,Seriennummer,Modell,Firmware; Modell und Firmware sind optional. Busadresse und Seriennummer können unterschiedlich sein. Vorhandene HTTP-Einträge bleiben getrennt.",
+        "description": "Die Geräteliste leer lassen, um die Slave-Liste des Masters automatisch zu lesen. Eine manuelle Liste kann als Alternative verwendet werden. Busadressen sind nicht unbedingt Seriennummern. Diese Testverbindung muss an deiner Anlage überprüft werden.",
         "data": {
           "ip_address": "IP-Adresse des Masters",
           "master_address": "Busadresse des Masters",
-          "devices": "Wechselrichter (einer pro Zeile)",
+          "devices": "Geräteliste (optionale manuelle Alternative)",
           "accept_experimental": "Ich möchte diese Testverbindung mit meiner Anlage ausprobieren"
         }
       }
@@ -65,7 +65,8 @@
         "title": "Solutronic-Einstellungen",
         "description": "Abfrageintervall anpassen.",
         "data": {
-          "scan_interval": "Aktualisierungsintervall (Sekunden)"
+          "scan_interval": "Aktualisierungsintervall (Sekunden)",
+          "discover_devices": "Wechselrichter automatisch über den Master finden"
         }
       }
     },

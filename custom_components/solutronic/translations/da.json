@@ -33,11 +33,11 @@
       },
       "tcp_gateway": {
         "title": "Master/slave-forbindelse (testfunktion)",
-        "description": "Forbind gennem masteren. Dette er en testfunktion baseret på en brugers setup. Startkommandoerne er ikke dokumenteret af producenten. Angiv én inverter pr. linje som adresse,serienummer,model,firmware; model og firmware er valgfrie. Busadressen kan være forskellig fra serienummeret. Eksisterende HTTP-opsætninger holdes adskilt.",
+        "description": "Lad inverterlisten være tom for automatisk at læse masterens slaveliste. En manuel liste kan bruges som fallback. Busadresser er ikke nødvendigvis serienumre. Dette er en testforbindelse, som skal afprøves på dit anlæg.",
         "data": {
           "ip_address": "Masterens IP-adresse",
           "master_address": "Masterens busadresse",
-          "devices": "Invertere (én pr. linje)",
+          "devices": "Inverterliste (valgfri manuel fallback)",
           "accept_experimental": "Jeg vil afprøve denne testforbindelse på mit setup"
         }
       }
@@ -65,7 +65,8 @@
         "title": "Solutronic Indstillinger",
         "description": "Justér opdateringsinterval.",
         "data": {
-          "scan_interval": "Opdateringsinterval (sekunder)"
+          "scan_interval": "Opdateringsinterval (sekunder)",
+          "discover_devices": "Find invertere automatisk gennem masteren"
         }
       }
     },

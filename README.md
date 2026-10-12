@@ -47,7 +47,8 @@ the latest published GitHub release.
 
 ## Experimental test branch
 
-This branch adds an isolated master/slave gateway test mode. Normal setup remains
+This branch adds an isolated master/slave gateway test mode with automatic
+slave-list discovery. Normal setup remains
 unchanged; only explicit IP entry with port 33330 opens the separate test form.
 It is not part of the published v2.0.2 release. See
 [the gateway test guide](docs/TCP_GATEWAY.md) before trying it.
@@ -321,7 +322,7 @@ aiohttp decoding. Storage tests use temporary directories. No inverter is contac
 Tests also cover manual legacy-device removal using Home Assistant's real device
 and entity registries, including protection of current and disabled entities.
 
-The 123-test suite has passed locally on Home Assistant **2024.1.6**, **2024.6.4**,
+The 131-test suite has passed locally on Home Assistant **2024.1.6**, **2024.6.4**,
 and **2026.10.0**. GitHub Actions is configured to run the same compatibility
 matrix, along with Ruff lint and formatting checks. See
 [tests/README.md](tests/README.md) for commands and dependency details, and

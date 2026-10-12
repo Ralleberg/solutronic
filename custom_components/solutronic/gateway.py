@@ -1,7 +1,10 @@
 """Isolated experimental gateway coordinator; HTTP state and IDs are untouched."""
 
+import asyncio
 import inspect
 import logging
+import time
+from dataclasses import asdict
 from datetime import timedelta
 
 from homeassistant.exceptions import HomeAssistantError
@@ -9,7 +12,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN
-from .spp import TCP_INTERVALS, GatewayDevice, SppClient
+from .spp import TCP_INTERVALS, GatewayDevice, SppClient, SppError
 from .util import as_energy
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,6 +54,14 @@ class GatewayCoordinator(DataUpdateCoordinator):
         self._pending = None
         self._save_pending = False
         self._saved = None
+        self.auto_discover = (
+            entry.options.get(
+                "discover_devices", entry.data.get("auto_discover", False)
+            )
+            is True
+        )
+        self._last_discovery = None
+        self.discovery_error = None
 
     async def async_restore_state(self):
         try:
@@ -122,6 +133,31 @@ class GatewayCoordinator(DataUpdateCoordinator):
         self._latest[address] = values
 
     async def _async_update_data(self):
+        if self.auto_discover and (
+            self._last_discovery is None
+            or time.monotonic() - self._last_discovery >= 600
+        ):
+            self._last_discovery = time.monotonic()
+            try:
+                addresses = await self.client.async_discover()
+            except (OSError, TimeoutError, asyncio.IncompleteReadError, SppError):
+                self.discovery_error = "discovery_failed"
+                # Keep the last verified list during a transient discovery outage.
+            else:
+                self.discovery_error = None
+                known = {device.address for device in self.devices}
+                self.devices.extend(
+                    GatewayDevice(address, None)
+                    for address in addresses
+                    if address not in known
+                )
+                self.client.addresses = tuple(addresses)
+                new_data = dict(self.entry.data)
+                new_data["devices"] = [asdict(device) for device in self.devices]
+                if new_data != self.entry.data:
+                    self.hass.config_entries.async_update_entry(
+                        self.entry, data=new_data
+                    )
         results = await self.client.async_poll()
         self.reachable = {
             address for address, values in results.items() if values is not None

@@ -61,3 +61,12 @@ firmware is inferred from unverified payload fields. The offset-9 identity-like
 field also differs on the address-22030 response and remains unused. Other
 counters and device timestamps are not decoded. Command meanings/persistence
 are not manufacturer-verified; TCP setup requires explicit confirmation.
+
+## Beta-two automatic slave discovery
+
+The parameter-read request/response cases are constructed from Solutronic's
+protocol specification B12 (27 January 2011), sections 2.7 and 3.4. It defines
+reading parameters 165–196 of the master for slave addresses. These discovery
+responses are simulated, not part of Pocket74's real six measurement frames.
+Hardware confirmation on firmware 2.65 is still required. No manual list is
+assumed to represent every setup and no serial is inferred from an address.

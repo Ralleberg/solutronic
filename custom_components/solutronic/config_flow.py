@@ -216,8 +216,11 @@ class SolutronicInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     or not 1 <= master <= 65535
                 ):
                     raise ValueError("Invalid master address")
-                devices = parse_devices(user_input["devices"])
-                if master not in {device.address for device in devices}:
+                automatic = not user_input.get("devices", "").strip()
+                devices = [] if automatic else parse_devices(user_input["devices"])
+                if not automatic and master not in {
+                    device.address for device in devices
+                }:
                     raise ValueError("Include the master in the device list")
             except (ValueError, KeyError):
                 errors["base"] = "invalid_gateway"
@@ -231,6 +234,14 @@ class SolutronicInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         ip, master, [device.address for device in devices]
                     )
                     try:
+                        if automatic:
+                            from .spp import GatewayDevice
+
+                            addresses = await client.async_discover()
+                            devices = [
+                                GatewayDevice(address, None) for address in addresses
+                            ]
+                            client.addresses = tuple(addresses)
                         values = await client.async_poll()
                         if not any(value is not None for value in values.values()):
                             errors["base"] = "cannot_connect"
@@ -241,6 +252,7 @@ class SolutronicInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                     CONF_IP_ADDRESS: ip,
                                     "connection_type": "tcp_gateway",
                                     "master_address": master,
+                                    "auto_discover": automatic,
                                     "devices": [asdict(device) for device in devices],
                                 },
                             )
@@ -257,7 +269,7 @@ class SolutronicInverterConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required("master_address"): vol.All(
                         int, vol.Range(min=1, max=65535)
                     ),
-                    vol.Required("devices"): selector.TextSelector(
+                    vol.Optional("devices", default=""): selector.TextSelector(
                         selector.TextSelectorConfig(multiline=True)
                     ),
                     vol.Required("accept_experimental", default=False): bool,
@@ -296,10 +308,24 @@ class SolutronicInverterOptionsFlow(config_entries.OptionsFlow):
             else:
                 options = dict(self._entry.options)
                 options[CONF_SCAN_INTERVAL] = interval
+                if is_gateway and "discover_devices" in user_input:
+                    options["discover_devices"] = user_input["discover_devices"] is True
                 return self.async_create_entry(title="", data=options)
 
         schema = vol.Schema(
             {vol.Optional(CONF_SCAN_INTERVAL, default=default): vol.In(intervals)}
         )
+        if is_gateway:
+            schema = schema.extend(
+                {
+                    vol.Optional(
+                        "discover_devices",
+                        default=self._entry.options.get(
+                            "discover_devices",
+                            self._entry.data.get("auto_discover", False),
+                        ),
+                    ): bool
+                }
+            )
 
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
