@@ -30,13 +30,25 @@
       "confirm": {
         "title": "Solutronic-inverter fundet",
         "description": "Der blev fundet en Solutronic-enhed på {ip_address}. Vil du tilføje den?"
+      },
+      "tcp_gateway": {
+        "title": "Master/slave-forbindelse (testfunktion)",
+        "description": "Forbind gennem masteren. Dette er en testfunktion baseret på en brugers setup. Startkommandoerne er ikke dokumenteret af producenten. Angiv én inverter pr. linje som adresse,serienummer,model,firmware; model og firmware er valgfrie. Busadressen kan være forskellig fra serienummeret. Eksisterende HTTP-opsætninger holdes adskilt.",
+        "data": {
+          "ip_address": "Masterens IP-adresse",
+          "master_address": "Masterens busadresse",
+          "devices": "Invertere (én pr. linje)",
+          "accept_experimental": "Jeg vil afprøve denne testforbindelse på mit setup"
+        }
       }
     },
     "error": {
       "cannot_connect": "Kunne ikke forbinde til inverteren.",
       "invalid_host": "Indtast en gyldig IPv4-adresse til inverteren.",
       "invalid_response": "Inverteren svarede, men sendte ingen gyldige målinger.",
-      "unknown": "Der opstod en uventet fejl. Se Home Assistant-loggen."
+      "unknown": "Der opstod en uventet fejl. Se Home Assistant-loggen.",
+      "invalid_gateway": "Angiv gyldig master-IP, busadresse og unikke inverterlinjer. Masteren skal være med på listen.",
+      "experimental_required": "Bekræft, at du vil afprøve forbindelsen, før du fortsætter."
     },
     "abort": {
       "already_configured": "Denne inverter er allerede konfigureret.",
@@ -58,7 +70,8 @@
       }
     },
     "error": {
-      "invalid_interval": "Vælg 5, 10 eller 30 sekunder."
+      "invalid_interval": "Vælg 5, 10 eller 30 sekunder.",
+      "invalid_gateway_interval": "Vælg 60, 120 eller 300 sekunder."
     }
   },
   "selector": {

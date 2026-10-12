@@ -45,3 +45,19 @@ or HTTP/HTML payloads. They contain binary protocol exchanges and cannot establi
 the HTTP charset, slave page selection, or the meaning of individual measurement
 fields. No protocol writes, slave commands, or guessed measurement mappings are
 implemented. Raw captures are not included in this repository.
+
+## Issue #6: SPP gateway responses
+
+`issue_6_spp_responses.json` preserves the six raw 137-byte frames and accompanying
+expected values in Pocket74's `solutronic_raw_examples.txt`, attached in his
+[11 October comment](https://github.com/Ralleberg/solutronic/issues/6#issuecomment-6113282562).
+Hex bytes are unchanged; the text wrapper was converted to JSON. No third-party
+script is executed or copied into the integration. Tests also use the supplied
+nine requests and the 13-byte master acknowledgements from the earlier PktMon
+Master 22031 capture (handshake 0094, preparation 0104 and 0105).
+
+Bus address 30535 is explicitly configured as serial 30537. No serial, model or
+firmware is inferred from unverified payload fields. The offset-9 identity-like
+field also differs on the address-22030 response and remains unused. Other
+counters and device timestamps are not decoded. Command meanings/persistence
+are not manufacturer-verified; TCP setup requires explicit confirmation.

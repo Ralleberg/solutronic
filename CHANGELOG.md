@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.1.0b1 (unreleased test branch)
+
+- Add an explicitly selected experimental TCP gateway for the master/slave setup
+  documented in issue #6. Ordinary HTTP setup and existing sensor/storage
+  identity are unchanged. Only explicit port-33330 input opens gateway setup.
+- Use a shared serialized connection, validated replies, bounded retries and
+  the supplied pacing. Give each configured inverter independent availability,
+  sensor identity and saved energy state; keep bus addresses separate from serials.
+- Decode only the supplied verified field mappings. Initialization command
+  semantics and physical integration behavior remain unverified.
+
+
 ## 2.0.2
 
 - Fix `UnicodeDecodeError` before HTML parsing when older firmware sends Western

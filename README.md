@@ -45,6 +45,13 @@ the latest published GitHub release.
 [Sensors](#sensors) · [Energy Dashboard](#energy-dashboard) ·
 [Troubleshooting](#troubleshooting) · [Changelog](CHANGELOG.md)
 
+## Experimental test branch
+
+This branch adds an isolated master/slave gateway test mode. Normal setup remains
+unchanged; only explicit IP entry with port 33330 opens the separate test form.
+It is not part of the published v2.0.2 release. See
+[the gateway test guide](docs/TCP_GATEWAY.md) before trying it.
+
 ## Requirements
 
 - A Solutronic inverter exposing a supported built-in HTTP web interface.
@@ -314,7 +321,7 @@ aiohttp decoding. Storage tests use temporary directories. No inverter is contac
 Tests also cover manual legacy-device removal using Home Assistant's real device
 and entity registries, including protection of current and disabled entities.
 
-The 92-test suite has passed locally on Home Assistant **2024.1.6**, **2024.6.4**,
+The 123-test suite has passed locally on Home Assistant **2024.1.6**, **2024.6.4**,
 and **2026.10.0**. GitHub Actions is configured to run the same compatibility
 matrix, along with Ruff lint and formatting checks. See
 [tests/README.md](tests/README.md) for commands and dependency details, and
