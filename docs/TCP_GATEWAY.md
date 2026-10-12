@@ -1,8 +1,9 @@
 # Experimental master/slave test branch
 
 This feature is available on `codex/issue-6-tcp-gateway` (version `2.1.0b1`).
-It has not been released or verified as part of this integration on physical
-hardware. It is based on the working sequence and six real response frames supplied
+This is a pre-release feature, not part of stable v2.0.2. It has not been verified
+as part of this integration on physical hardware. It is based on the working
+sequence and six real response frames supplied
 by Pocket74 in [issue #6](https://github.com/Ralleberg/solutronic/issues/6).
 
 ## Existing installations

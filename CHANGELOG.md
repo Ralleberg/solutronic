@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.1.0b1 (unreleased test branch)
+## 2.1.0b1 (pre-release)
 
 - Add an explicitly selected experimental TCP gateway for the master/slave setup
   documented in issue #6. Ordinary HTTP setup and existing sensor/storage
