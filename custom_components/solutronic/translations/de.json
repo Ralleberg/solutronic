@@ -30,13 +30,25 @@
       "confirm": {
         "title": "Solutronic-Wechselrichter gefunden",
         "description": "Ein Solutronic-Gerät wurde unter {ip_address} gefunden. Möchtest du es hinzufügen?"
+      },
+      "tcp_gateway": {
+        "title": "Master/Slave-Verbindung (Testfunktion)",
+        "description": "Die Geräteliste leer lassen, um die Slave-Liste des Masters automatisch zu lesen. Eine manuelle Liste kann als Alternative verwendet werden. Busadressen sind nicht unbedingt Seriennummern. Diese Testverbindung muss an deiner Anlage überprüft werden.",
+        "data": {
+          "ip_address": "IP-Adresse des Masters",
+          "master_address": "Busadresse des Masters",
+          "devices": "Geräteliste (optionale manuelle Alternative)",
+          "accept_experimental": "Ich möchte diese Testverbindung mit meiner Anlage ausprobieren"
+        }
       }
     },
     "error": {
       "cannot_connect": "Verbindung zum Wechselrichter fehlgeschlagen.",
       "invalid_host": "Gib eine gültige IPv4-Adresse für den Wechselrichter ein.",
       "invalid_response": "Der Wechselrichter hat geantwortet, aber keine gültigen Messwerte geliefert.",
-      "unknown": "Ein unerwarteter Fehler ist aufgetreten. Prüfe das Home Assistant-Protokoll."
+      "unknown": "Ein unerwarteter Fehler ist aufgetreten. Prüfe das Home Assistant-Protokoll.",
+      "invalid_gateway": "Gültige Master-IP, Busadresse und eindeutige Gerätezeilen eingeben. Der Master muss in der Liste enthalten sein.",
+      "experimental_required": "Bitte bestätigen, dass du diese Verbindung testen möchtest."
     },
     "abort": {
       "already_configured": "Dieser Wechselrichter ist bereits konfiguriert.",
@@ -53,12 +65,14 @@
         "title": "Solutronic-Einstellungen",
         "description": "Abfrageintervall anpassen.",
         "data": {
-          "scan_interval": "Aktualisierungsintervall (Sekunden)"
+          "scan_interval": "Aktualisierungsintervall (Sekunden)",
+          "discover_devices": "Wechselrichter automatisch über den Master finden"
         }
       }
     },
     "error": {
-      "invalid_interval": "Wähle 5, 10 oder 30 Sekunden."
+      "invalid_interval": "Wähle 5, 10 oder 30 Sekunden.",
+      "invalid_gateway_interval": "60, 120 oder 300 Sekunden auswählen."
     }
   },
   "selector": {

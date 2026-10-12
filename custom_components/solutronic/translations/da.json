@@ -30,13 +30,25 @@
       "confirm": {
         "title": "Solutronic-inverter fundet",
         "description": "Der blev fundet en Solutronic-enhed på {ip_address}. Vil du tilføje den?"
+      },
+      "tcp_gateway": {
+        "title": "Master/slave-forbindelse (testfunktion)",
+        "description": "Lad inverterlisten være tom for automatisk at læse masterens slaveliste. En manuel liste kan bruges som fallback. Busadresser er ikke nødvendigvis serienumre. Dette er en testforbindelse, som skal afprøves på dit anlæg.",
+        "data": {
+          "ip_address": "Masterens IP-adresse",
+          "master_address": "Masterens busadresse",
+          "devices": "Inverterliste (valgfri manuel fallback)",
+          "accept_experimental": "Jeg vil afprøve denne testforbindelse på mit setup"
+        }
       }
     },
     "error": {
       "cannot_connect": "Kunne ikke forbinde til inverteren.",
       "invalid_host": "Indtast en gyldig IPv4-adresse til inverteren.",
       "invalid_response": "Inverteren svarede, men sendte ingen gyldige målinger.",
-      "unknown": "Der opstod en uventet fejl. Se Home Assistant-loggen."
+      "unknown": "Der opstod en uventet fejl. Se Home Assistant-loggen.",
+      "invalid_gateway": "Angiv gyldig master-IP, busadresse og unikke inverterlinjer. Masteren skal være med på listen.",
+      "experimental_required": "Bekræft, at du vil afprøve forbindelsen, før du fortsætter."
     },
     "abort": {
       "already_configured": "Denne inverter er allerede konfigureret.",
@@ -53,12 +65,14 @@
         "title": "Solutronic Indstillinger",
         "description": "Justér opdateringsinterval.",
         "data": {
-          "scan_interval": "Opdateringsinterval (sekunder)"
+          "scan_interval": "Opdateringsinterval (sekunder)",
+          "discover_devices": "Find invertere automatisk gennem masteren"
         }
       }
     },
     "error": {
-      "invalid_interval": "Vælg 5, 10 eller 30 sekunder."
+      "invalid_interval": "Vælg 5, 10 eller 30 sekunder.",
+      "invalid_gateway_interval": "Vælg 60, 120 eller 300 sekunder."
     }
   },
   "selector": {
