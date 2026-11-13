@@ -146,6 +146,11 @@ SENSORS = {
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up sensors when config entry is added."""
+    if entry.data.get("connection_type") == "tcp_gateway":
+        from .gateway_sensor import async_setup_gateway_sensors
+
+        await async_setup_gateway_sensors(hass, entry, async_add_entities)
+        return
     coordinator = hass.data[DOMAIN][entry.entry_id]
     supported_keys = coordinator.supported_keys | set(coordinator.data or {})
 

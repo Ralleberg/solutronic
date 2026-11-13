@@ -54,3 +54,10 @@ Lint and formatting checks use Ruff 0.17.0 and the settings in `pyproject.toml`:
 ruff check custom_components tests
 ruff format --check custom_components tests
 ```
+
+Gateway tests replay six real measurement frames and nine request examples from
+Pocket74. Loopback TCP tests cover shared connections, fragmentation, concatenated
+stale replies, checksums, reconnects, cancellation and bounded retries. Config-flow
+tests verify that ordinary HTTP input/schema stay unchanged and no SPP commands
+are sent automatically. Device IDs, partial availability and per-device energy
+state/restoration are tested independently. See [the gateway test guide](../docs/TCP_GATEWAY.md).

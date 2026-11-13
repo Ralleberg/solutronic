@@ -83,9 +83,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     interval = scan_interval(entry.options)
 
     # Create the data coordinator with dynamic interval
-    coordinator = SolutronicDataUpdateCoordinator(hass, ip, interval, entry)
+    if entry.data.get("connection_type") == "tcp_gateway":
+        from .gateway import GatewayCoordinator
+
+        coordinator = GatewayCoordinator(hass, entry)
+    else:
+        coordinator = SolutronicDataUpdateCoordinator(hass, ip, interval, entry)
     await coordinator.async_restore_state()
-    await coordinator.async_config_entry_first_refresh()
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except BaseException:
+        if entry.data.get("connection_type") == "tcp_gateway":
+            await coordinator.async_shutdown()
+        raise
 
     # Store coordinator instance
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
@@ -105,6 +115,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     if unload_ok:
         coordinator = hass.data[DOMAIN].pop(entry.entry_id)
         await coordinator.async_save_state()
+        if entry.data.get("connection_type") == "tcp_gateway":
+            await coordinator.async_shutdown()
     return unload_ok
 
 

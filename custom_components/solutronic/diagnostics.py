@@ -12,6 +12,32 @@ from .util import as_float, scan_interval
 async def async_get_config_entry_diagnostics(hass, entry):
     """Return selected configuration, connection health and numeric readings."""
     coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    if entry.data.get("connection_type") == "tcp_gateway":
+        return async_redact_data(
+            {
+                "configuration": {
+                    "connection_type": "tcp_gateway",
+                    "ip_address": entry.data.get("ip_address"),
+                },
+                "devices": [
+                    {
+                        "address": device.address,
+                        "serial": device.serial,
+                        "model": device.model,
+                        "firmware": device.firmware,
+                        "reachable": device.address in coordinator.reachable,
+                        "readings": (coordinator.data or {}).get(device.address, {}),
+                    }
+                    for device in coordinator.devices
+                ]
+                if coordinator is not None
+                else [],
+                "poll_interval_seconds": coordinator.update_interval.total_seconds()
+                if coordinator is not None
+                else None,
+            },
+            {"ip_address", "serial", "address"},
+        )
     diagnostics = {
         "configuration": {
             "ip_address": entry.data.get("ip_address"),

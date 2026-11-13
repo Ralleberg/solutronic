@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.1.0b2 (pre-release)
+
+- Find configured slaves by reading the master’s documented address list, rather
+  than requiring a device count or guessing/scanning arbitrary addresses.
+- Discover on startup/reload and every ten minutes; add new inverter sensors
+  dynamically and preserve existing identities, serial aliases and energy history.
+- Keep a manual address list as a fallback and allow beta-one gateway entries
+  to enable discovery in their options without recreating the entry.
+- Normal HTTP setup remains unchanged. Discovery replies are simulated against
+  manufacturer documentation; verification on Pocket74’s firmware is pending.
+
+## 2.1.0b1 (pre-release)
+
+- Add an explicitly selected experimental TCP gateway for the master/slave setup
+  documented in issue #6. Ordinary HTTP setup and existing sensor/storage
+  identity are unchanged. Only explicit port-33330 input opens gateway setup.
+- Use a shared serialized connection, validated replies, bounded retries and
+  the supplied pacing. Give each configured inverter independent availability,
+  sensor identity and saved energy state; keep bus addresses separate from serials.
+- Decode only the supplied verified field mappings. Initialization command
+  semantics and physical integration behavior remain unverified.
+
+
 ## 2.0.2
 
 - Fix `UnicodeDecodeError` before HTML parsing when older firmware sends Western
